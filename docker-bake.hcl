@@ -127,9 +127,60 @@ target "binaries-cross" {
   ]
 }
 
-target "release" {
+target "_pkg_common" {
+  inherits = ["binaries"]
+  target = "pkg"
+  platforms = [
+    "linux/amd64",
+    "linux/arm/v6",
+    "linux/arm/v7",
+    "linux/arm64",
+    "linux/ppc64le",
+    "linux/riscv64",
+    "linux/s390x"
+  ]
+}
+
+target "pkg-apk" {
+  inherits = ["_pkg_common"]
+  args = {
+    PKG = "apk"
+  }
+}
+
+target "pkg-deb" {
+  inherits = ["_pkg_common"]
+  args = {
+    PKG = "deb"
+  }
+}
+
+target "pkg-rpm" {
+  inherits = ["_pkg_common"]
+  args = {
+    PKG = "rpm"
+  }
+}
+
+target "pkg" {
+  inherits = ["_pkg_common"]
+  args = {
+    PKG = "apk,deb,rpm"
+  }
+}
+
+group "release" {
+  targets = ["release-binaries", "release-packages"]
+}
+
+target "release-binaries" {
   inherits = ["binaries-cross"]
   target = "release"
+  output = [RELEASE_OUT]
+}
+
+target "release-packages" {
+  inherits = ["pkg"]
   output = [RELEASE_OUT]
 }
 

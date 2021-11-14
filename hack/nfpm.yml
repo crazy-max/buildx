@@ -1,0 +1,53 @@
+name: docker-buildx
+
+# The architecture is specified using Go nomenclature (GOARCH) and translated
+# to the platform specific equivalent. In order to manually set the architecture
+# to a platform specific value, use deb_arch, rpm_arch and apk_arch.
+arch: ${ARCH}
+platform: linux
+
+version: ${VERSION}
+#version_schema: none
+#version_metadata: git
+epoch: 0
+#prerelease: beta1
+#release: 1
+
+section: default
+#priority: extra
+
+maintainer: Docker <support@docker.com>
+description: Docker Buildx plugin extends build capabilities with BuildKit.
+vendor: Docker, Inc
+homepage: https://github.com/docker/buildx
+license: Apache-2.0
+#changelog: "changelog.yaml"
+disable_globbing: true
+
+#depends:
+#  - docker-ce-cli
+
+contents:
+  - src: /usr/bin/buildx
+    dst: /usr/libexec/docker/cli-plugins/docker-buildx
+
+rpm:
+  group: Tools/Docker
+  #summary: Explicit Summary for Sample Package
+  compression: xz
+  #signature:
+    #key_file: key.gpg
+    #key_id: bc8acdd415bd80b3
+
+deb:
+  compression: xz
+  #signature:
+    #key_file: key.gpg
+    #type: origin
+    #key_id: bc8acdd415bd80b3
+
+apk:
+  #signature:
+    #key_file: key.gpg
+    #key_name: origin
+    #key_id: ignored
