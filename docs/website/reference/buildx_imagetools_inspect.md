@@ -1,0 +1,1 @@
+{!../docs/reference/buildx_imagetools_inspect.md!}

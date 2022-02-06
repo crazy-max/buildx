@@ -1,0 +1,138 @@
+site_name: Docker Buildx
+site_description: Docker CLI plugin for extended build capabilities with BuildKit
+site_author: Docker
+site_url: https://docker.github.io/buildx/
+edit_uri: edit/master/docs/website/
+docs_dir: docs/website
+
+repo_name: docker/buildx
+repo_url: https://github.com/docker/buildx/
+
+theme:
+  name: material
+  custom_dir: docs/website/_overrides
+  language: en
+  features:
+    - content.code.annotate
+    - search.highlight
+    - search.share
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  logo: assets/logo_white.png
+  favicon: assets/favicon.ico
+  include_search_page: false
+  search_index_only: true
+
+extra:
+  footer: true
+  # FIXME: Google Analytics?
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+  seo:
+    # FIXME: Add Google and Bing site verification
+    google: !ENV GOOGLE_SEARCH_KEY
+    bing: !ENV BING_SEARCH_KEY
+    #alexa:
+    #yandex:
+  social:
+    - icon: fontawesome/brands/docker
+      link: https://www.docker.com/
+    - icon: fontawesome/brands/github
+      link: https://github.com/docker
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/Docker
+    - icon: fontawesome/brands/youtube
+      link: https://www.youtube.com/user/dockerrun
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/docker
+    - icon: fontawesome/brands/facebook
+      link: https://www.facebook.com/docker.run
+    - icon: fontawesome/brands/slideshare
+      link: https://www.slideshare.net/docker
+    - icon: fontawesome/brands/reddit-alien
+      link: https://www.reddit.com/r/docker
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - footnotes
+  - markdown_include.include:
+      base_path: docs
+  - meta
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - toc:
+      permalink: true
+
+plugins:
+  - exclude:
+      glob:
+        - "_overrides/*"
+  - macros:
+      j2_block_start_string: '[[%'
+      j2_block_end_string: '%]]'
+      j2_variable_start_string: '[['
+      j2_variable_end_string: ']]'
+  - search:
+      prebuild_index: python
+      lang:
+        - en
+
+nav:
+  - About: index.md
+  - Install: install.md
+  - Getting started:
+    - Building with Buildx: getting-started/building-with-buildx.md
+    - Working with builder instances: getting-started/working-with-builder-instances.md
+    - Building multi-platform images: getting-started/building-multi-platforms-images.md
+    - High-level build options: getting-started/high-level-build-options.md
+  - Reference:
+    - buildx: reference/buildx.md
+    - buildx bake: reference/buildx_bake.md
+    - buildx build: reference/buildx_build.md
+    - buildx create: reference/buildx_create.md
+    - buildx du: reference/buildx_du.md
+    - buildx imagetools:
+      - imagetools: reference/buildx_imagetools.md
+      - imagetools create: reference/buildx_imagetools_create.md
+      - imagetools inspect: reference/buildx_imagetools_inspect.md
+    - buildx inspect: reference/buildx_inspect.md
+    - buildx install: reference/buildx_install.md
+    - buildx ls: reference/buildx_ls.md
+    - buildx prune: reference/buildx_prune.md
+    - buildx rm: reference/buildx_rm.md
+    - buildx stop: reference/buildx_stop.md
+    - buildx uninstall: reference/buildx_uninstall.md
+    - buildx use: reference/buildx_use.md
+    - buildx version: reference/buildx_version.md
+  - Build: build.md
+  - Contributing: contributing.md
+  - Code of conduct: code-of-conduct.md

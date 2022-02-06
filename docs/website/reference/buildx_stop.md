@@ -1,0 +1,1 @@
+{!../docs/reference/buildx_stop.md!}

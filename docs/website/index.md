@@ -1,5 +1,3 @@
-# Docker Buildx
-
 [![GitHub release](https://img.shields.io/github/release/docker/buildx.svg?style=flat-square)](https://github.com/docker/buildx/releases/latest)
 [![PkgGoDev](https://img.shields.io/badge/go.dev-docs-007d9c?style=flat-square&logo=go&logoColor=white)](https://pkg.go.dev/github.com/docker/buildx)
 [![Build Status](https://img.shields.io/github/workflow/status/docker/buildx/build?label=build&logo=github&style=flat-square)](https://github.com/docker/buildx/actions?query=workflow%3Abuild)
@@ -9,7 +7,7 @@
 `buildx` is a Docker CLI plugin for extended build capabilities with
 [BuildKit](https://github.com/moby/buildkit).
 
-Key features:
+## Key features
 
 - Familiar UI from `docker build`
 - Full BuildKit capabilities with container driver
@@ -19,11 +17,8 @@ Key features:
 - High-level build constructs (`bake`)
 - In-container driver support (both Docker and Kubernetes)
 
-# Documentation
-
-Documentation can be found at https://docker.github.io/buildx/
-
-# Contributing
+## Contributing
 
 Want to contribute to Buildx? Awesome! You can find information about
-contributing to this project in the [CONTRIBUTING.md](/.github/CONTRIBUTING.md)
+contributing to this project in the [Contributing](contributing.md)
+page.

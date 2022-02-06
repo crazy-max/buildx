@@ -85,6 +85,21 @@ target "update-authors" {
   output = ["."]
 }
 
+target "base-website" {
+  inherits = ["_common"]
+  dockerfile = "./hack/dockerfiles/website.Dockerfile"
+  target = "base"
+  output = ["type=docker"]
+  tags = ["buildx-website:local"]
+}
+
+target "update-website" {
+  inherits = ["_common"]
+  dockerfile = "./hack/dockerfiles/website.Dockerfile"
+  target = "release"
+  output = ["./site"]
+}
+
 target "mod-outdated" {
   inherits = ["_common"]
   dockerfile = "./hack/dockerfiles/vendor.Dockerfile"
