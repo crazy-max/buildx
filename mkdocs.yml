@@ -114,6 +114,17 @@ nav:
     - Working with builder instances: getting-started/working-with-builder-instances.md
     - Building multi-platform images: getting-started/building-multi-platforms-images.md
     - High-level build options: getting-started/high-level-build-options.md
+  - BuildKit Dockerfile syntax:
+      - Overview: dockerfile-syntax/index.md
+      - Build mounts: dockerfile-syntax/run-mount.md
+      - Network modes: dockerfile-syntax/run-network.md
+      - Security context: dockerfile-syntax/run-security.md
+      - Here-Documents: dockerfile-syntax/heredocs.md
+  - Guides:
+    - OpenTelemetry support: guides/opentelemetry-support.md
+    - Use a custom network: guides/use-custom-network.md
+    - Registry mirror: guides/registry-mirror.md
+    - Resource limiting: guides/resource-limiting.md
   - Reference:
     - buildx: reference/buildx.md
     - buildx bake: reference/buildx_bake.md

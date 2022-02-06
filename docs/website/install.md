@@ -93,7 +93,7 @@ Rename the relevant binary and copy it to the destination matching your OS:
     * `/usr/local/lib/docker/cli-plugins` OR `/usr/local/libexec/docker/cli-plugins`
     * `/usr/lib/docker/cli-plugins` OR `/usr/libexec/docker/cli-plugins`
 
-## Dockerfile
+## Inside your Dockerfile
 
 Here is how to install and use Buildx inside a Dockerfile through the
 [`docker/buildx-bin`](https://hub.docker.com/r/docker/buildx-bin) image:
