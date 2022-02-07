@@ -19,7 +19,7 @@ Boot and [inspect `mybuilder`](../reference/buildx_inspect.md):
 docker buildx inspect --bootstrap
 ```
 
-[Inspect builder container](https://docs.docker.com/engine/reference/commandline/inspect/)
+[Inspect the builder container](https://docs.docker.com/engine/reference/commandline/inspect/)
 and see what network is being used:
 
 ```shell

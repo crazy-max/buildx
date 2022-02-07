@@ -33,7 +33,7 @@ Rename the relevant binary and copy it to the destination matching your OS:
 
     ```shell
     mkdir -p "~/.docker/cli-plugins"
-    wget "[[ config.repo_url ]]releases/download/[[ git.tag ]]/buildx-[[ git.tag ]].linux-amd64" -qO "~/.docker/cli-plugins/docker-buildx"
+    wget "[[[ config.repo_url ]]]releases/download/[[[ git.tag ]]]/buildx-[[[ git.tag ]]].linux-amd64" -qO "~/.docker/cli-plugins/docker-buildx"
     chmod +x "~/.docker/cli-plugins/docker-buildx"
     ```
 
@@ -46,7 +46,7 @@ Rename the relevant binary and copy it to the destination matching your OS:
 
     ```shell
     mkdir -p "~/.docker/cli-plugins"
-    wget "[[ config.repo_url ]]releases/download/[[ git.tag ]]/buildx-[[ git.tag ]].darwin-amd64" -qO "~/.docker/cli-plugins/docker-buildx"
+    wget "[[[ config.repo_url ]]]releases/download/[[[ git.tag ]]]/buildx-[[[ git.tag ]]].darwin-amd64" -qO "~/.docker/cli-plugins/docker-buildx"
     chmod +x "~/.docker/cli-plugins/docker-buildx"
     ```
 
@@ -59,7 +59,7 @@ Rename the relevant binary and copy it to the destination matching your OS:
 
     ```shell
     mkdir -p "~/.docker/cli-plugins"
-    wget "[[ config.repo_url ]]releases/download/[[ git.tag ]]/buildx-[[ git.tag ]].darwin-arm64" -qO "~/.docker/cli-plugins/docker-buildx"
+    wget "[[[ config.repo_url ]]]releases/download/[[[ git.tag ]]]/buildx-[[[ git.tag ]]].darwin-arm64" -qO "~/.docker/cli-plugins/docker-buildx"
     chmod +x "~/.docker/cli-plugins/docker-buildx"
     ```
 
@@ -72,7 +72,7 @@ Rename the relevant binary and copy it to the destination matching your OS:
 
     ```powershell
     mkdir -Force "~/.docker/cli-plugins"
-    wget "[[ config.repo_url ]]releases/download/[[ git.tag ]]/buildx-[[ git.tag ]].windows-amd64.exe" -OutFile "~/.docker/cli-plugins/docker-buildx.exe"
+    wget "[[[ config.repo_url ]]]releases/download/[[[ git.tag ]]]/buildx-[[[ git.tag ]]].windows-amd64.exe" -OutFile "~/.docker/cli-plugins/docker-buildx.exe"
     ```
 
     Or copy it into one of these folders for installing it system-wide:
@@ -84,7 +84,7 @@ Rename the relevant binary and copy it to the destination matching your OS:
 
     ```shell
     mkdir -p "~/.docker/cli-plugins"
-    wget "[[ config.repo_url ]]releases/download/[[ git.tag ]]/buildx-[[ git.tag ]].linux-amd64" -qO "~/.docker/cli-plugins/docker-buildx"
+    wget "[[[ config.repo_url ]]]releases/download/[[[ git.tag ]]]/buildx-[[[ git.tag ]]].linux-amd64" -qO "~/.docker/cli-plugins/docker-buildx"
     chmod +x "~/.docker/cli-plugins/docker-buildx"
     ```
 

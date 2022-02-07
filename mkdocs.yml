@@ -98,10 +98,10 @@ plugins:
       glob:
         - "_overrides/*"
   - macros:
-      j2_block_start_string: '[[%'
-      j2_block_end_string: '%]]'
-      j2_variable_start_string: '[['
-      j2_variable_end_string: ']]'
+      j2_block_start_string: '[[[%'
+      j2_block_end_string: '%]]]'
+      j2_variable_start_string: '[[['
+      j2_variable_end_string: ']]]'
   - search:
       prebuild_index: python
       lang:
@@ -126,6 +126,7 @@ nav:
     - Use a custom network: guides/use-custom-network.md
     - Registry mirror: guides/registry-mirror.md
     - Resource limiting: guides/resource-limiting.md
+    - Use self-signed certificates: guides/use-self-signed-certificates.md
   - Reference:
     - buildx: reference/buildx.md
     - buildx bake: reference/buildx_bake.md
