@@ -3,5 +3,5 @@
 }
 
 .md-typeset__table code {
-  word-break: normal;
+  white-space: nowrap;
 }
