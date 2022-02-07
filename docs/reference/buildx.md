@@ -29,15 +29,15 @@ Extended build capabilities with BuildKit
 
 ### Options
 
-| Name | Description |
-| --- | --- |
-| [`--builder string`](#builder) | Override the configured builder instance |
+| Name | Type | Description |
+| --- | --- | --- |
+| [`--builder`](#builder) | `string` | Override the configured builder instance |
 
 
 <!---MARKER_GEN_END-->
 
 ## Examples
 
-### <a name="builder"></a> Override the configured builder instance (--builder)
+### <a name="builder"></a> Override the configured builder instance (`--builder`)
 
 You can also use the `BUILDX_BUILDER` environment variable.

@@ -17,9 +17,9 @@ Commands to work on images in registry
 
 ### Options
 
-| Name | Description |
-| --- | --- |
-| [`--builder string`](#builder) | Override the configured builder instance |
+| Name | Type | Description |
+| --- | --- | --- |
+| [`--builder`](#builder) | `string` | Override the configured builder instance |
 
 
 <!---MARKER_GEN_END-->
@@ -31,6 +31,6 @@ These commands are useful for inspecting multi-platform build results.
 
 ## Examples
 
-### <a name="builder"></a> Override the configured builder instance (--builder)
+### <a name="builder"></a> Override the configured builder instance (`--builder`)
 
 Same as [`buildx --builder`](buildx.md#builder).

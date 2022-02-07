@@ -268,9 +268,19 @@ func genFlagResult(cmd *cobra.Command, flags *pflag.FlagSet, anchors map[string]
 	)
 
 	flags.VisitAll(func(flag *pflag.Flag) {
+		var ftype string
+		switch flag.Value.Type() {
+		case "stringArray":
+			ftype = "list"
+		case "stringSlice":
+			ftype = "list/strings"
+		default:
+			ftype = flag.Value.Type()
+		}
+
 		opt = cmdOption{
 			Option:       flag.Name,
-			ValueType:    flag.Value.Type(),
+			ValueType:    ftype,
 			DefaultValue: forceMultiLine(flag.DefValue, defaultValueMaxWidth),
 			Deprecated:   len(flag.Deprecated) > 0,
 			Hidden:       flag.Hidden,
@@ -367,7 +377,7 @@ func (c *Client) loadLongDescription(parentCmd *cobra.Command) error {
 			}
 		}
 		name := cmd.CommandPath()
-		if i := strings.Index(name, " "); c.plugin && i >= 0 {
+		if i := strings.Index(name, " "); i >= 0 {
 			// remove root command / binary name
 			name = name[i+1:]
 		}

@@ -9,3 +9,11 @@ Uninstall the 'docker builder' alias
 
 
 <!---MARKER_GEN_END-->
+
+## Description
+
+Uninstall the "docker builder" alias.
+
+```shell
+docker buildx uninstall
+```

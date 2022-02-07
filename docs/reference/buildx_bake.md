@@ -13,18 +13,18 @@ Build from a file
 
 ### Options
 
-| Name | Description |
-| --- | --- |
-| [`--builder string`](#builder) | Override the configured builder instance |
-| [`-f`](#file), [`--file stringArray`](#file) | Build definition file |
-| `--load` | Shorthand for `--set=*.output=type=docker` |
-| `--metadata-file string` | Write build result metadata to the file |
-| [`--no-cache`](#no-cache) | Do not use cache when building the image |
-| [`--print`](#print) | Print the options without building |
-| [`--progress string`](#progress) | Set type of progress output (`auto`, `plain`, `tty`). Use plain to show container output |
-| [`--pull`](#pull) | Always attempt to pull a newer version of the image |
-| `--push` | Shorthand for `--set=*.output=type=registry` |
-| [`--set stringArray`](#set) | Override target value (e.g., `targetpattern.key=value`) |
+| Name | Type | Description |
+| --- | --- | --- |
+| [`--builder`](#builder) | `string` | Override the configured builder instance |
+| [`-f`](#file), [`--file`](#file) | `list` | Build definition file |
+| `--load` |  | Shorthand for `--set=*.output=type=docker` |
+| `--metadata-file` | `string` | Write build result metadata to the file |
+| [`--no-cache`](#no-cache) |  | Do not use cache when building the image |
+| [`--print`](#print) |  | Print the options without building |
+| [`--progress`](#progress) | `string` | Set type of progress output (`auto`, `plain`, `tty`). Use plain to show container output |
+| [`--pull`](#pull) |  | Always attempt to pull a newer version of the image |
+| `--push` |  | Shorthand for `--set=*.output=type=registry` |
+| [`--set`](#set) | `list` | Override target value (e.g., `targetpattern.key=value`) |
 
 
 <!---MARKER_GEN_END-->
@@ -43,11 +43,11 @@ command and extending the functionality further.
 
 ## Examples
 
-### <a name="builder"></a> Override the configured builder instance (--builder)
+### <a name="builder"></a> Override the configured builder instance (`--builder`)
 
 Same as [`buildx --builder`](buildx.md#builder).
 
-### <a name="file"></a> Specify a build definition file (-f, --file)
+### <a name="file"></a> Specify a build definition file (`-f`, `--file`)
 
 By default, `buildx bake` looks for build definition files in the current
 directory, the following are parsed:
@@ -66,9 +66,10 @@ they are all read and configurations are combined.
 The following example uses a Docker Compose file named `docker-compose.dev.yaml`
 as build definition file, and builds all targets in the file:
 
-```console
-$ docker buildx bake -f docker-compose.dev.yaml
-
+```shell
+docker buildx bake -f docker-compose.dev.yaml
+```
+```text
 [+] Building 66.3s (30/30) FINISHED
  => [frontend internal] load build definition from Dockerfile  0.1s
  => => transferring dockerfile: 36B                            0.0s
@@ -84,9 +85,10 @@ following example builds the `backend` and `database` targets that are defined
 in the `docker-compose.dev.yaml` file, skipping the build for the `frontend`
 target:
 
-```console
-$ docker buildx bake -f docker-compose.dev.yaml backend database
-
+```shell
+docker buildx bake -f docker-compose.dev.yaml backend database
+```
+```text
 [+] Building 2.4s (13/13) FINISHED
  => [backend internal] load build definition from Dockerfile  0.1s
  => => transferring dockerfile: 81B                           0.0s
@@ -98,8 +100,10 @@ $ docker buildx bake -f docker-compose.dev.yaml backend database
 
 You can also use a remote `git` bake definition:
 
-```console
-$ docker buildx bake "https://github.com/docker/cli.git#v20.10.11" --print
+```shell
+docker buildx bake "https://github.com/docker/cli.git#v20.10.11" --print
+```
+```text
 #1 [internal] load git source https://github.com/docker/cli.git#v20.10.11
 #1 0.745 e8f1871b077b64bcb4a13334b7146492773769f7       refs/tags/v20.10.11
 #1 2.022 From https://github.com/docker/cli
@@ -141,8 +145,10 @@ in the definition.
 If you want to access the main context for bake command from a bake file
 that has been imported remotely, you can use the `BAKE_CMD_CONTEXT` builtin var:
 
-```console
-$ cat https://raw.githubusercontent.com/tonistiigi/buildx/remote-test/docker-bake.hcl
+```shell
+cat https://raw.githubusercontent.com/tonistiigi/buildx/remote-test/docker-bake.hcl
+```
+```text
 target "default" {
   context = BAKE_CMD_CONTEXT
   dockerfile-inline = <<EOT
@@ -154,8 +160,10 @@ EOT
 }
 ```
 
-```console
-$ docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test" --print
+```shell
+docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test" --print
+```
+```json
 {
   "target": {
     "default": {
@@ -167,9 +175,11 @@ $ docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test" --pr
 }
 ```
 
-```console
-$ touch foo bar
-$ docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test"
+```shell
+touch foo bar
+docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test"
+```
+```text
 ...
  > [4/4] RUN ls -l && stop:
 #8 0.101 total 0
@@ -178,8 +188,10 @@ $ docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test"
 #8 0.102 /bin/sh: stop: not found
 ```
 
-```console
-$ docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test" "https://github.com/docker/cli.git#v20.10.11" --print
+```shell
+docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test" "https://github.com/docker/cli.git#v20.10.11" --print
+```
+```text
 #1 [internal] load git source https://github.com/tonistiigi/buildx.git#remote-test
 #1 0.429 577303add004dd7efeb13434d69ea030d35f7888       refs/heads/remote-test
 #1 CACHED
@@ -194,8 +206,10 @@ $ docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test" "htt
 }
 ```
 
-```console
-$ docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test" "https://github.com/docker/cli.git#v20.10.11"
+```shell
+docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test" "https://github.com/docker/cli.git#v20.10.11"
+```
+```text
 ...
  > [4/4] RUN ls -l && stop:
 #8 0.136 drwxrwxrwx    5 root     root          4096 Jul 27 18:31 kubernetes
@@ -210,17 +224,19 @@ $ docker buildx bake "https://github.com/tonistiigi/buildx.git#remote-test" "htt
 #8 0.136 /bin/sh: stop: not found
 ```
 
-### <a name="no-cache"></a> Do not use cache when building the image (--no-cache)
+### <a name="no-cache"></a> Do not use cache when building the image (`--no-cache`)
 
 Same as `build --no-cache`. Do not use cache when building the image.
 
-### <a name="print"></a> Print the options without building (--print)
+### <a name="print"></a> Print the options without building (`--print`)
 
 Prints the resulting options of the targets desired to be built, in a JSON
 format, without starting a build.
 
-```console
-$ docker buildx bake -f docker-bake.hcl --print db
+```shell
+docker buildx bake -f docker-bake.hcl --print db
+```
+```json
 {
   "group": {
     "default": {
@@ -241,7 +257,7 @@ $ docker buildx bake -f docker-bake.hcl --print db
 }
 ```
 
-### <a name="progress"></a> Set type of progress output (--progress)
+### <a name="progress"></a> Set type of progress output (`--progress`)
 
 Same as [`build --progress`](buildx_build.md#progress). Set type of progress
 output (auto, plain, tty). Use plain to show container output (default "auto").
@@ -250,9 +266,10 @@ output (auto, plain, tty). Use plain to show container output (default "auto").
 
 The following example uses `plain` output during the build:
 
-```console
-$ docker buildx bake --progress=plain
-
+```shell
+docker buildx bake --progress=plain
+```
+```text
 #2 [backend internal] load build definition from Dockerfile.test
 #2 sha256:de70cb0bb6ed8044f7b9b1b53b67f624e2ccfb93d96bb48b70c1fba562489618
 #2 ...
@@ -264,12 +281,11 @@ $ docker buildx bake --progress=plain
 ...
 ```
 
-
-### <a name="pull"></a> Always attempt to pull a newer version of the image (--pull)
+### <a name="pull"></a> Always attempt to pull a newer version of the image (`--pull`)
 
 Same as `build --pull`.
 
-### <a name="set"></a> Override target configurations from command line (--set)
+### <a name="set"></a> Override target configurations from command line (`--set`)
 
 ```
 --set targetpattern.key[.subkey]=value
@@ -278,15 +294,12 @@ Same as `build --pull`.
 Override target configurations from command line. The pattern matching syntax
 is defined in https://golang.org/pkg/path/#Match.
 
-
-**Examples**
-
-```console
-$ docker buildx bake --set target.args.mybuildarg=value
-$ docker buildx bake --set target.platform=linux/arm64
-$ docker buildx bake --set foo*.args.mybuildarg=value # overrides build arg for all targets starting with 'foo'
-$ docker buildx bake --set *.platform=linux/arm64     # overrides platform for all targets
-$ docker buildx bake --set foo*.no-cache              # bypass caching only for targets starting with 'foo'
+```shell
+docker buildx bake --set target.args.mybuildarg=value
+docker buildx bake --set target.platform=linux/arm64
+docker buildx bake --set foo*.args.mybuildarg=value # overrides build arg for all targets starting with 'foo'
+docker buildx bake --set *.platform=linux/arm64     # overrides platform for all targets
+docker buildx bake --set foo*.no-cache              # bypass caching only for targets starting with 'foo'
 ```
 
 Complete list of overridable fields:
@@ -312,7 +325,6 @@ groups to inherit from.
 
 Note: Design of bake command is work in progress, the user experience may change
 based on feedback.
-
 
 **Example HCL definition**
 
@@ -364,8 +376,10 @@ target "app" {
 
 You can use this file directly:
 
-```console
-$ docker buildx bake --print app
+```shell
+docker buildx bake --print app
+```
+```json
 {
   "group": {
     "default": {
@@ -396,8 +410,10 @@ FOO="def-${WHOAMI}"
 
 And invoke bake together with both of the files:
 
-```console
-$ docker buildx bake -f docker-bake.hcl -f env.hcl --print app
+```shell
+docker buildx bake -f docker-bake.hcl -f env.hcl --print app
+```
+```json
 {
   "group": {
     "default": {
@@ -472,8 +488,10 @@ alternatively, in json format:
 }
 ```
 
-```console
-$ docker buildx bake --print webapp
+```shell
+docker buildx bake --print webapp
+```
+```json
 {
   "group": {
     "default": {
@@ -494,8 +512,10 @@ $ docker buildx bake --print webapp
 }
 ```
 
-```console
-$ TAG=$(git rev-parse --short HEAD) docker buildx bake --print webapp
+```shell
+TAG=$(git rev-parse --short HEAD) docker buildx bake --print webapp
+```
+```json
 {
   "group": {
     "default": {
@@ -538,8 +558,10 @@ target "webapp" {
 }
 ```
 
-```console
-$ docker buildx bake --print webapp
+```shell
+docker buildx bake --print webapp
+```
+```json
 {
   "group": {
     "default": {
@@ -583,8 +605,10 @@ target "webapp" {
 }
 ```
 
-```console
-$ docker buildx bake --print webapp
+```shell
+docker buildx bake --print webapp
+```
+```json
 {
   "group": {
     "default": {
@@ -630,8 +654,10 @@ target "webapp" {
 }
 ```
 
-```console
-$ docker buildx bake --print webapp
+```shell
+docker buildx bake --print webapp
+```
+```json
 {
   "group": {
     "default": {
@@ -673,8 +699,10 @@ target "webapp" {
 }
 ```
 
-```console
+```shell
 $ docker buildx bake --print webapp
+```
+```json
 {
   "group": {
     "default": {
@@ -730,8 +758,10 @@ target "app" {
 }
 ```
 
-```console
-$ docker buildx bake -f docker-bake1.hcl -f docker-bake2.hcl --print app
+```shell
+docker buildx bake -f docker-bake1.hcl -f docker-bake2.hcl --print app
+```
+```json
 {
   "group": {
     "default": {
@@ -776,8 +806,10 @@ target "app" {
 }
 ```
 
-```console
-$ docker buildx bake --print app
+```shell
+docker buildx bake --print app
+```
+```json
 {
   "group": {
     "default": {
@@ -845,8 +877,10 @@ services:
         no-cache: true
 ```
 
-```console
-$ docker buildx bake --print
+```shell
+docker buildx bake --print
+```
+```json
 {
   "group": {
     "default": {

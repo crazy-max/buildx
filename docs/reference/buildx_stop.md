@@ -9,9 +9,9 @@ Stop builder instance
 
 ### Options
 
-| Name | Description |
-| --- | --- |
-| [`--builder string`](#builder) | Override the configured builder instance |
+| Name | Type | Description |
+| --- | --- | --- |
+| [`--builder`](#builder) | `string` | Override the configured builder instance |
 
 
 <!---MARKER_GEN_END-->
@@ -23,6 +23,6 @@ restart the builder. The implementation of stop depends on the driver.
 
 ## Examples
 
-### <a name="builder"></a> Override the configured builder instance (--builder)
+### <a name="builder"></a> Override the configured builder instance (`--builder`)
 
 Same as [`buildx --builder`](buildx.md#builder).

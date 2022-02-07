@@ -13,35 +13,35 @@ Start a build
 
 ### Options
 
-| Name | Description |
-| --- | --- |
-| [`--add-host stringSlice`](https://docs.docker.com/engine/reference/commandline/build/#add-entries-to-container-hosts-file---add-host) | Add a custom host-to-IP mapping (format: `host:ip`) |
-| [`--allow stringSlice`](#allow) | Allow extra privileged entitlement (e.g., `network.host`, `security.insecure`) |
-| [`--build-arg stringArray`](https://docs.docker.com/engine/reference/commandline/build/#set-build-time-variables---build-arg) | Set build-time variables |
-| [`--build-context stringArray`](#build-context) | Additional build contexts (e.g., name=path) |
-| [`--builder string`](#builder) | Override the configured builder instance |
-| [`--cache-from stringArray`](#cache-from) | External cache sources (e.g., `user/app:cache`, `type=local,src=path/to/dir`) |
-| [`--cache-to stringArray`](#cache-to) | Cache export destinations (e.g., `user/app:cache`, `type=local,dest=path/to/dir`) |
-| [`--cgroup-parent string`](https://docs.docker.com/engine/reference/commandline/build/#use-a-custom-parent-cgroup---cgroup-parent) | Optional parent cgroup for the container |
-| [`-f`](https://docs.docker.com/engine/reference/commandline/build/#specify-a-dockerfile--f), [`--file string`](https://docs.docker.com/engine/reference/commandline/build/#specify-a-dockerfile--f) | Name of the Dockerfile (default: `PATH/Dockerfile`) |
-| `--iidfile string` | Write the image ID to the file |
-| `--label stringArray` | Set metadata for an image |
-| [`--load`](#load) | Shorthand for `--output=type=docker` |
-| `--metadata-file string` | Write build result metadata to the file |
-| `--network string` | Set the networking mode for the `RUN` instructions during build |
-| `--no-cache` | Do not use cache when building the image |
-| [`-o`](#output), [`--output stringArray`](#output) | Output destination (format: `type=local,dest=path`) |
-| [`--platform stringArray`](#platform) | Set target platform for build |
-| [`--progress string`](#progress) | Set type of progress output (`auto`, `plain`, `tty`). Use plain to show container output |
-| `--pull` | Always attempt to pull a newer version of the image |
-| [`--push`](#push) | Shorthand for `--output=type=registry` |
-| `-q`, `--quiet` | Suppress the build output and print image ID on success |
-| `--secret stringArray` | Secret file to expose to the build (format: `id=mysecret,src=/local/secret`) |
-| [`--shm-size bytes`](#shm-size) | Size of `/dev/shm` |
-| `--ssh stringArray` | SSH agent socket or keys to expose to the build (format: `default\|<id>[=<socket>\|<key>[,<key>]]`) |
-| [`-t`](https://docs.docker.com/engine/reference/commandline/build/#tag-an-image--t), [`--tag stringArray`](https://docs.docker.com/engine/reference/commandline/build/#tag-an-image--t) | Name and optionally a tag (format: `name:tag`) |
-| [`--target string`](https://docs.docker.com/engine/reference/commandline/build/#specifying-target-build-stage---target) | Set the target build stage to build |
-| [`--ulimit ulimit`](#ulimit) | Ulimit options |
+| Name | Type | Description |
+| --- | --- | --- |
+| [`--add-host`](https://docs.docker.com/engine/reference/commandline/build/#add-entries-to-container-hosts-file---add-host) | `list/strings` | Add a custom host-to-IP mapping (format: `host:ip`) |
+| [`--allow`](#allow) | `list/strings` | Allow extra privileged entitlement (e.g., `network.host`, `security.insecure`) |
+| [`--build-arg`](https://docs.docker.com/engine/reference/commandline/build/#set-build-time-variables---build-arg) | `list` | Set build-time variables |
+| [`--build-context`](#build-context) | `list` | Additional build contexts (e.g., name=path) |
+| [`--builder`](#builder) | `string` | Override the configured builder instance |
+| [`--cache-from`](#cache-from) | `list` | External cache sources (e.g., `user/app:cache`, `type=local,src=path/to/dir`) |
+| [`--cache-to`](#cache-to) | `list` | Cache export destinations (e.g., `user/app:cache`, `type=local,dest=path/to/dir`) |
+| [`--cgroup-parent`](https://docs.docker.com/engine/reference/commandline/build/#use-a-custom-parent-cgroup---cgroup-parent) | `string` | Optional parent cgroup for the container |
+| [`-f`](https://docs.docker.com/engine/reference/commandline/build/#specify-a-dockerfile--f), [`--file`](https://docs.docker.com/engine/reference/commandline/build/#specify-a-dockerfile--f) | `string` | Name of the Dockerfile (default: `PATH/Dockerfile`) |
+| `--iidfile` | `string` | Write the image ID to the file |
+| `--label` | `list` | Set metadata for an image |
+| [`--load`](#load) |  | Shorthand for `--output=type=docker` |
+| `--metadata-file` | `string` | Write build result metadata to the file |
+| `--network` | `string` | Set the networking mode for the `RUN` instructions during build |
+| `--no-cache` |  | Do not use cache when building the image |
+| [`-o`](#output), [`--output`](#output) | `list` | Output destination (format: `type=local,dest=path`) |
+| [`--platform`](#platform) | `list` | Set target platform for build |
+| [`--progress`](#progress) | `string` | Set type of progress output (`auto`, `plain`, `tty`). Use plain to show container output |
+| `--pull` |  | Always attempt to pull a newer version of the image |
+| [`--push`](#push) |  | Shorthand for `--output=type=registry` |
+| `-q`, `--quiet` |  | Suppress the build output and print image ID on success |
+| `--secret` | `list` | Secret file to expose to the build (format: `id=mysecret,src=/local/secret`) |
+| [`--shm-size`](#shm-size) | `bytes` | Size of `/dev/shm` |
+| `--ssh` | `list` | SSH agent socket or keys to expose to the build (format: `default\|<id>[=<socket>\|<key>[,<key>]]`) |
+| [`-t`](https://docs.docker.com/engine/reference/commandline/build/#tag-an-image--t), [`--tag`](https://docs.docker.com/engine/reference/commandline/build/#tag-an-image--t) | `list` | Name and optionally a tag (format: `name:tag`) |
+| [`--target`](https://docs.docker.com/engine/reference/commandline/build/#specifying-target-build-stage---target) | `string` | Set the target build stage to build |
+| [`--ulimit`](#ulimit) | `ulimit` | Ulimit options |
 
 
 <!---MARKER_GEN_END-->
@@ -57,11 +57,11 @@ here we’ll document a subset of the new flags.
 
 ## Examples
 
-### <a name="builder"></a> Override the configured builder instance (--builder)
+### <a name="builder"></a> Override the configured builder instance (`--builder`)
 
 Same as [`buildx --builder`](buildx.md#builder).
 
-### <a name="platform"></a> Set the target platforms for the build (--platform)
+### <a name="platform"></a> Set the target platforms for the build (`--platform`)
 
 ```
 --platform=value[,value]
@@ -94,15 +94,13 @@ for the full description of automatic platform argument variants .
 The formatting for the platform specifier is defined in the [containerd source
 code](https://github.com/containerd/containerd/blob/v1.4.3/platforms/platforms.go#L63).
 
-**Examples**
-
-```console
+```shell
 $ docker buildx build --platform=linux/arm64 .
 $ docker buildx build --platform=linux/amd64,linux/arm64,linux/arm/v7 .
 $ docker buildx build --platform=darwin .
 ```
 
-### <a name="progress"></a> Set type of progress output (--progress)
+### <a name="progress"></a> Set type of progress output (`--progress`)
 
 ```
 --progress=VALUE
@@ -116,9 +114,10 @@ output (default "auto").
 
 The following example uses `plain` output during the build:
 
-```console
-$ docker buildx build --load --progress=plain .
-
+```shell
+docker buildx build --load --progress=plain .
+```
+```text
 #1 [internal] load build definition from Dockerfile
 #1 transferring dockerfile: 227B 0.0s done
 #1 DONE 0.1s
@@ -129,7 +128,7 @@ $ docker buildx build --load --progress=plain .
 ...
 ```
 
-### <a name="output"></a> Set the export action for the build result (-o, --output)
+### <a name="output"></a> Set the export action for the build result (`-o`, `--output`)
 
 ```
 -o, --output=[PATH,-,type=TYPE[,KEY=VALUE]
@@ -147,15 +146,13 @@ If just the path is specified as a value, `buildx` will use the local exporter
 with this path as the destination. If the value is "-", `buildx` will use `tar`
 exporter and write to `stdout`.
 
-**Examples**
-
-```console
-$ docker buildx build -o . .
-$ docker buildx build -o outdir .
-$ docker buildx build -o - - > out.tar
-$ docker buildx build -o type=docker .
-$ docker buildx build -o type=docker,dest=- . > myimage.tar
-$ docker buildx build -t tonistiigi/foo -o type=registry
+```shell
+docker buildx build -o . .
+docker buildx build -o outdir .
+docker buildx build -o - - > out.tar
+docker buildx build -o type=docker .
+docker buildx build -o type=docker,dest=- . > myimage.tar
+docker buildx build -t tonistiigi/foo -o type=registry
 ```
 
 Supported exported types are:
@@ -220,18 +217,17 @@ Attribute keys:
 
 The `registry` exporter is a shortcut for `type=image,push=true`.
 
-
-### <a name="push"></a> Push the build result to a registry (--push)
+### <a name="push"></a> Push the build result to a registry (`--push`)
 
 Shorthand for [`--output=type=registry`](#registry). Will automatically push the
 build result to registry.
 
-### <a name="load"></a> Load the single-platform build result to `docker images` (--load)
+### <a name="load"></a> Load the single-platform build result to `docker images` (`--load`)
 
 Shorthand for [`--output=type=docker`](#docker). Will automatically load the
 single-platform build result to `docker images`.
 
-### <a name="cache-from"></a> Use an external cache source for a build (--cache-from)
+### <a name="cache-from"></a> Use an external cache source for a build (`--cache-from`)
 
 ```
 --cache-from=[NAME|type=TYPE[,KEY=VALUE]]
@@ -253,19 +249,17 @@ If no type is specified, `registry` exporter is used with a specified reference.
 
 `docker` driver currently only supports importing build cache from the registry.
 
-**Examples**
-
-```console
-$ docker buildx build --cache-from=user/app:cache .
-$ docker buildx build --cache-from=user/app .
-$ docker buildx build --cache-from=type=registry,ref=user/app .
-$ docker buildx build --cache-from=type=local,src=path/to/cache .
-$ docker buildx build --cache-from=type=gha .
+```shell
+docker buildx build --cache-from=user/app:cache .
+docker buildx build --cache-from=user/app .
+docker buildx build --cache-from=type=registry,ref=user/app .
+docker buildx build --cache-from=type=local,src=path/to/cache .
+docker buildx build --cache-from=type=gha .
 ```
 
 More info about cache exporters and available attributes: https://github.com/moby/buildkit#export-cache
 
-### <a name="cache-to"></a> Export build cache to an external cache destination (--cache-to)
+### <a name="cache-to"></a> Export build cache to an external cache destination (`--cache-to`)
 
 ```
 --cache-to=[NAME|type=TYPE[,KEY=VALUE]]
@@ -292,20 +286,17 @@ Attribute key:
 exports layers already in the final build stage, `max` exports layers for
 all stages. Metadata is always exported for the whole build.
 
-**Examples**
-
-```console
-$ docker buildx build --cache-to=user/app:cache .
-$ docker buildx build --cache-to=type=inline .
-$ docker buildx build --cache-to=type=registry,ref=user/app .
-$ docker buildx build --cache-to=type=local,dest=path/to/cache .
-$ docker buildx build --cache-to=type=gha .
+```shell
+docker buildx build --cache-to=user/app:cache .
+docker buildx build --cache-to=type=inline .
+docker buildx build --cache-to=type=registry,ref=user/app .
+docker buildx build --cache-to=type=local,dest=path/to/cache .
+docker buildx build --cache-to=type=gha .
 ```
 
 More info about cache exporters and available attributes: https://github.com/moby/buildkit#export-cache
 
-
-### <a name="build-context"></a> Additional build contexts (--build-context)
+### <a name="build-context"></a> Additional build contexts (`--build-context`)
 
 ```
 --build-context=name=VALUE
@@ -316,28 +307,25 @@ When Dockerfile defines a stage with the same name it is overwritten.
 
 The value can be a local source directory, container image (with docker-image:// prefix), Git or HTTP URL.
 
-**Examples**
-
 Replace `alpine:latest` with a pinned one:
 
-```console
-$ docker buildx build --build-context alpine=docker-image://alpine@sha256:0123456789 .
+```shell
+docker buildx build --build-context alpine=docker-image://alpine@sha256:0123456789 .
 ```
 
 Expose a secondary local source directory:
 
-```console
-$ docker buildx build --build-context project=path/to/project/source .
-# docker buildx build --build-context project=https://github.com/myuser/project.git .
+```shell
+docker buildx build --build-context project=path/to/project/source .
+docker buildx build --build-context project=https://github.com/myuser/project.git .
 ```
 
-```Dockerfile
+```dockerfile
 FROM alpine
 COPY --from=project myfile /
 ```
 
-
-### <a name="allow"></a> Allow extra privileged entitlement (--allow)
+### <a name="allow"></a> Allow extra privileged entitlement (`--allow`)
 
 ```
 --allow=ENTITLEMENT
@@ -352,26 +340,24 @@ Allow extra privileged entitlement. List of entitlements:
 For entitlements to be enabled, the `buildkitd` daemon also needs to allow them
 with `--allow-insecure-entitlement` (see [`create --buildkitd-flags`](buildx_create.md#buildkitd-flags))
 
-**Examples**
-
-```console
-$ docker buildx create --use --name insecure-builder --buildkitd-flags '--allow-insecure-entitlement security.insecure'
-$ docker buildx build --allow security.insecure .
+```shell
+docker buildx create --use --name insecure-builder --buildkitd-flags "--allow-insecure-entitlement security.insecure"
+docker buildx build --allow "security.insecure" .
 ```
 
-### <a name="shm-size"></a> Size of `/dev/shm` (--shm-size)
+### <a name="shm-size"></a> Size of `/dev/shm` (`--shm-size`)
 
 The format is `<number><unit>`. `number` must be greater than `0`. Unit is
 optional and can be `b` (bytes), `k` (kilobytes), `m` (megabytes), or `g`
 (gigabytes). If you omit the unit, the system uses bytes.
 
-### <a name="ulimit"></a> Set ulimits (--ulimit)
+### <a name="ulimit"></a> Set ulimits (`--ulimit`)
 
 `--ulimit` is specified with a soft and hard limit as such:
 `<type>=<soft limit>[:<hard limit>]`, for example:
 
-```console
-$ docker buildx build --ulimit nofile=1024:1024 .
+```shell
+docker buildx build --ulimit nofile=1024:1024 .
 ```
 
 > **Note**

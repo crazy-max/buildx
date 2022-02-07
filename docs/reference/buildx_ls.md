@@ -12,13 +12,12 @@ List builder instances
 
 ## Description
 
-Lists all builder instances and the nodes for each instance
+Lists all builder instances and the nodes for each instance.
 
-**Example**
-
-```console
-$ docker buildx ls
-
+```shell
+docker buildx ls
+```
+```text
 NAME/NODE       DRIVER/ENDPOINT             STATUS  PLATFORMS
 elated_tesla *  docker-container
   elated_tesla0 unix:///var/run/docker.sock running linux/amd64
