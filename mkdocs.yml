@@ -14,6 +14,7 @@ theme:
   language: en
   features:
     - content.code.annotate
+    - navigation.indexes
     - search.highlight
     - search.share
     - search.suggest
@@ -115,7 +116,7 @@ nav:
     - Building multi-platform images: getting-started/building-multi-platforms-images.md
     - High-level build options: getting-started/high-level-build-options.md
   - BuildKit Dockerfile syntax:
-      - Overview: dockerfile-syntax/index.md
+      - dockerfile-syntax/index.md
       - Build mounts: dockerfile-syntax/run-mount.md
       - Network modes: dockerfile-syntax/run-network.md
       - Security context: dockerfile-syntax/run-security.md
@@ -131,10 +132,9 @@ nav:
     - buildx build: reference/buildx_build.md
     - buildx create: reference/buildx_create.md
     - buildx du: reference/buildx_du.md
-    - buildx imagetools:
-      - imagetools: reference/buildx_imagetools.md
-      - imagetools create: reference/buildx_imagetools_create.md
-      - imagetools inspect: reference/buildx_imagetools_inspect.md
+    - buildx imagetools: reference/buildx_imagetools.md
+    - buildx imagetools create: reference/buildx_imagetools_create.md
+    - buildx imagetools inspect: reference/buildx_imagetools_inspect.md
     - buildx inspect: reference/buildx_inspect.md
     - buildx install: reference/buildx_install.md
     - buildx ls: reference/buildx_ls.md
