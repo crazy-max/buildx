@@ -58,7 +58,7 @@ require (
 
 replace (
 	github.com/docker/cli => github.com/docker/cli v20.10.3-0.20210702143511-f782d1355eff+incompatible
-	github.com/docker/docker => github.com/docker/docker v20.10.3-0.20211216190657-088afc99e4bf+incompatible
+	github.com/docker/docker => github.com/docker/docker v20.10.3-0.20211208011758-87521affb077+incompatible
 	k8s.io/api => k8s.io/api v0.22.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.22.4
 	k8s.io/client-go => k8s.io/client-go v0.22.4
