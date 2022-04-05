@@ -746,6 +746,64 @@ target "two" {
 	require.Equal(t, map[string]string{"b": "pre-jkl"}, c.Targets[1].Args)
 }
 
+func TestCombineHCLAttrs(t *testing.T) {
+	c, err := ParseFiles([]File{
+		{
+			Name: "docker-bake.hcl",
+			Data: []byte(`
+ABC = "foo"
+variable "DEF" {
+  default = ""
+}
+group "default" {
+  targets = ["one"]
+}
+target "one" {
+  args = {
+    a = "pre-${ABC}"
+  }
+}
+target "two" {
+  args = {
+    b = "pre-${DEF}"
+  }
+}`),
+		},
+		{
+			Name: "foo.hcl",
+			Data: []byte(`
+ABC = "oof"
+variable "DEF" {
+  default = "bar"
+}
+target "one" {
+  args = {
+    a = "pre-${ABC}-${DEF}"
+  }
+}`),
+		},
+		{
+			Name: "bar.hcl",
+			Data: []byte(`
+ABC = "ghi"
+DEF = "jkl"`),
+		},
+	}, nil)
+	require.NoError(t, err)
+
+	require.Equal(t, 1, len(c.Groups))
+	require.Equal(t, "default", c.Groups[0].Name)
+	require.Equal(t, []string{"one"}, c.Groups[0].Targets)
+
+	require.Equal(t, 2, len(c.Targets))
+
+	require.Equal(t, c.Targets[0].Name, "one")
+	require.Equal(t, map[string]string{"a": "pre-ghi-jkl"}, c.Targets[0].Args)
+
+	require.Equal(t, c.Targets[1].Name, "two")
+	require.Equal(t, map[string]string{"b": "pre-jkl"}, c.Targets[1].Args)
+}
+
 func TestCombineHCLAndJSONAttrs(t *testing.T) {
 	c, err := ParseFiles([]File{
 		{
