@@ -59,6 +59,7 @@ require (
 replace (
 	github.com/docker/cli => github.com/docker/cli v20.10.3-0.20220226190722-8667ccd1124c+incompatible
 	github.com/docker/docker => github.com/docker/docker v20.10.3-0.20220224222438-c78f6963a1c0+incompatible
+	github.com/hashicorp/hcl/v2 => github.com/crazy-max/hcl/v2 v2.8.3-0.20220406200825-acd2c7a6f243 // 2.8.2-fix-merged-justattrs branch
 	k8s.io/api => k8s.io/api v0.22.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.22.4
 	k8s.io/client-go => k8s.io/client-go v0.22.4

@@ -116,7 +116,6 @@ func (mb mergedBodies) JustAttributes() (Attributes, Diagnostics) {
 						),
 						Subject: &attr.NameRange,
 					})
-					continue
 				}
 
 				attrs[name] = attr
