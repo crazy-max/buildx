@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/docker/buildx/bake/hclparser/lib"
 	"github.com/docker/buildx/util/userfunc"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -270,6 +271,11 @@ func Parse(b hcl.Body, opt Opt, val interface{}) hcl.Diagnostics {
 		}
 	}
 
+	functions := stdlibFunctions
+	for k, v := range lib.Functions {
+		functions[k] = v
+	}
+
 	p := &parser{
 		opt: opt,
 
@@ -282,7 +288,7 @@ func Parse(b hcl.Body, opt Opt, val interface{}) hcl.Diagnostics {
 		doneF:     map[string]struct{}{},
 		ectx: &hcl.EvalContext{
 			Variables: map[string]cty.Value{},
-			Functions: stdlibFunctions,
+			Functions: functions,
 		},
 	}
 
