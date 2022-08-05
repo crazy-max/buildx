@@ -14,7 +14,6 @@ import (
 	"github.com/docker/buildx/util/progress"
 	"github.com/docker/cli/cli/command"
 	dopts "github.com/docker/cli/opts"
-	dockerclient "github.com/docker/docker/client"
 	"github.com/moby/buildkit/util/grpcerrors"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
@@ -338,21 +337,6 @@ func hasNodeGroup(list []*nginfo, ngi *nginfo) bool {
 		}
 	}
 	return false
-}
-
-func dockerAPI(dockerCli command.Cli) *api {
-	return &api{dockerCli: dockerCli}
-}
-
-type api struct {
-	dockerCli command.Cli
-}
-
-func (a *api) DockerAPI(name string) (dockerclient.APIClient, error) {
-	if name == "" {
-		name = a.dockerCli.CurrentContext()
-	}
-	return storeutil.ClientForEndpoint(a.dockerCli, name)
 }
 
 type dinfo struct {
