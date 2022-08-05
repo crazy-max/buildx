@@ -30,11 +30,13 @@ func GetCurrentEndpoint(dockerCli command.Cli) (string, error) {
 	if name != "default" {
 		return name, nil
 	}
-	de, err := GetDockerEndpoint(dockerCli, name)
+	dem, err := GetDockerEndpoint(dockerCli, name)
 	if err != nil {
 		return "", errors.Errorf("docker endpoint for %q not found", name)
+	} else if dem != nil {
+		return dem.Host, nil
 	}
-	return de, nil
+	return "", nil
 }
 
 func GetProxyConfig(dockerCli command.Cli) map[string]string {
@@ -63,26 +65,22 @@ func GetProxyConfig(dockerCli command.Cli) map[string]string {
 	return m
 }
 
-// GetDockerEndpoint returns docker endpoint string for given context
-func GetDockerEndpoint(dockerCli command.Cli, name string) (string, error) {
+// GetDockerEndpoint returns docker endpoint meta for given context
+func GetDockerEndpoint(dockerCli command.Cli, name string) (*docker.EndpointMeta, error) {
 	list, err := dockerCli.ContextStore().List()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	for _, l := range list {
 		if l.Name == name {
-			ep, ok := l.Endpoints["docker"]
-			if !ok {
-				return "", errors.Errorf("context %q does not have a Docker endpoint", name)
+			epm, err := docker.EndpointFromContext(l)
+			if err != nil {
+				return nil, err
 			}
-			typed, ok := ep.(docker.EndpointMeta)
-			if !ok {
-				return "", errors.Errorf("endpoint %q is not of type EndpointMeta, %T", ep, ep)
-			}
-			return typed.Host, nil
+			return &epm, nil
 		}
 	}
-	return "", nil
+	return nil, nil
 }
 
 // GetCurrentInstance finds the current builder instance

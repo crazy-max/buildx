@@ -13,7 +13,6 @@ import (
 	"github.com/docker/buildx/util/platformutil"
 	"github.com/docker/buildx/util/progress"
 	"github.com/docker/cli/cli/command"
-	"github.com/docker/cli/cli/context/docker"
 	dopts "github.com/docker/cli/opts"
 	dockerclient "github.com/docker/docker/client"
 	"github.com/moby/buildkit/util/grpcerrors"
@@ -26,10 +25,10 @@ import (
 
 // validateEndpoint validates that endpoint is either a context or a docker host
 func validateEndpoint(dockerCli command.Cli, ep string) (string, error) {
-	de, err := storeutil.GetDockerEndpoint(dockerCli, ep)
-	if err == nil && de != "" {
+	dem, err := storeutil.GetDockerEndpoint(dockerCli, ep)
+	if err == nil && dem != nil {
 		if ep == "default" {
-			return de, nil
+			return dem.Host, nil
 		}
 		return ep, nil
 	}
@@ -66,7 +65,7 @@ func driversForNodeGroup(ctx context.Context, dockerCli command.Cli, ng *store.N
 		// docker-container driver for older daemon that doesn't support
 		// buildkit (< 18.06).
 		ep := ng.Nodes[0].Endpoint
-		dockerapi, err := clientForEndpoint(dockerCli, ep)
+		dockerapi, err := storeutil.ClientForEndpoint(dockerCli, ep)
 		if err != nil {
 			return nil, err
 		}
@@ -98,13 +97,11 @@ func driversForNodeGroup(ctx context.Context, dockerCli command.Cli, ng *store.N
 					dis[i] = di
 				}()
 
-				dockerapi, err := clientForEndpoint(dockerCli, n.Endpoint)
+				dockerapi, err := storeutil.ClientForEndpoint(dockerCli, n.Endpoint)
 				if err != nil {
 					di.Err = err
 					return nil
 				}
-				// TODO: replace the following line with dockerclient.WithAPIVersionNegotiation option in clientForEndpoint
-				dockerapi.NegotiateAPIVersion(ctx)
 
 				contextStore := dockerCli.ContextStore()
 
@@ -153,48 +150,6 @@ func driversForNodeGroup(ctx context.Context, dockerCli command.Cli, ng *store.N
 	}
 
 	return dis, nil
-}
-
-// clientForEndpoint returns a docker client for an endpoint
-func clientForEndpoint(dockerCli command.Cli, name string) (dockerclient.APIClient, error) {
-	list, err := dockerCli.ContextStore().List()
-	if err != nil {
-		return nil, err
-	}
-	for _, l := range list {
-		if l.Name == name {
-			dep, ok := l.Endpoints["docker"]
-			if !ok {
-				return nil, errors.Errorf("context %q does not have a Docker endpoint", name)
-			}
-			epm, ok := dep.(docker.EndpointMeta)
-			if !ok {
-				return nil, errors.Errorf("endpoint %q is not of type EndpointMeta, %T", dep, dep)
-			}
-			ep, err := docker.WithTLSData(dockerCli.ContextStore(), name, epm)
-			if err != nil {
-				return nil, err
-			}
-			clientOpts, err := ep.ClientOpts()
-			if err != nil {
-				return nil, err
-			}
-			return dockerclient.NewClientWithOpts(clientOpts...)
-		}
-	}
-
-	ep := docker.Endpoint{
-		EndpointMeta: docker.EndpointMeta{
-			Host: name,
-		},
-	}
-
-	clientOpts, err := ep.ClientOpts()
-	if err != nil {
-		return nil, err
-	}
-
-	return dockerclient.NewClientWithOpts(clientOpts...)
 }
 
 func getInstanceOrDefault(ctx context.Context, dockerCli command.Cli, instance, contextPathHash string) ([]build.DriverInfo, error) {
@@ -397,7 +352,7 @@ func (a *api) DockerAPI(name string) (dockerclient.APIClient, error) {
 	if name == "" {
 		name = a.dockerCli.CurrentContext()
 	}
-	return clientForEndpoint(a.dockerCli, name)
+	return storeutil.ClientForEndpoint(a.dockerCli, name)
 }
 
 type dinfo struct {
