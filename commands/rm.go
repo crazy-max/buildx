@@ -56,14 +56,8 @@ func runRm(dockerCli command.Cli, in rmOptions) error {
 		return err
 	}
 
-	ctxbuilders, err := dockerCli.ContextStore().List()
-	if err != nil {
-		return err
-	}
-	for _, cb := range ctxbuilders {
-		if b.NodeGroup.Driver == "docker" && len(b.NodeGroup.Nodes) == 1 && b.NodeGroup.Nodes[0].Endpoint == cb.Name {
-			return errors.Errorf("context builder cannot be removed, run `docker context rm %s` to remove this context", cb.Name)
-		}
+	if cb := b.GetContextName(); cb != "" {
+		return errors.Errorf("context builder cannot be removed, run `docker context rm %s` to remove this context", cb)
 	}
 
 	err1 := rm(ctx, b.Drivers, in)
@@ -142,6 +136,9 @@ func rmAllInactive(ctx context.Context, txn *store.Txn, dockerCli command.Cli, i
 			eg.Go(func() error {
 				if err := b.LoadDrivers(timeoutCtx, true, ""); err != nil {
 					return errors.Wrapf(err, "cannot load %s", b.NodeGroup.Name)
+				}
+				if cb := b.GetContextName(); cb != "" {
+					return errors.Errorf("context builder cannot be removed, run `docker context rm %s` to remove this context", cb)
 				}
 				if b.NodeGroup.Dynamic {
 					return nil

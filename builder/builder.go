@@ -135,6 +135,20 @@ func (b *Builder) Inactive() bool {
 	return true
 }
 
+// GetContextName returns builder context name if available.
+func (b *Builder) GetContextName() string {
+	ctxbuilders, err := b.dockerCli.ContextStore().List()
+	if err != nil {
+		return ""
+	}
+	for _, cb := range ctxbuilders {
+		if b.NodeGroup.Driver == "docker" && len(b.NodeGroup.Nodes) == 1 && b.NodeGroup.Nodes[0].Endpoint == cb.Name {
+			return cb.Name
+		}
+	}
+	return ""
+}
+
 // GetBuilders returns all builders
 func GetBuilders(dockerCli command.Cli, txn *store.Txn) ([]*Builder, error) {
 	storeng, err := txn.List()
