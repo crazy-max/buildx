@@ -6,7 +6,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/docker/buildx/build"
+	"github.com/docker/buildx/builder"
 	"github.com/docker/buildx/driver"
 	"github.com/docker/buildx/util/progress"
 	"github.com/moby/buildkit/client"
@@ -20,7 +20,7 @@ type Input struct {
 	URL   string
 }
 
-func ReadRemoteFiles(ctx context.Context, dis []build.DriverInfo, url string, names []string, pw progress.Writer) ([]File, *Input, error) {
+func ReadRemoteFiles(ctx context.Context, drivers []builder.Driver, url string, names []string, pw progress.Writer) ([]File, *Input, error) {
 	var filename string
 	st, ok := detectGitContext(url)
 	if !ok {
@@ -33,8 +33,8 @@ func ReadRemoteFiles(ctx context.Context, dis []build.DriverInfo, url string, na
 	inp := &Input{State: st, URL: url}
 	var files []File
 
-	var di *build.DriverInfo
-	for _, d := range dis {
+	var di *builder.Driver
+	for _, d := range drivers {
 		if d.Err == nil {
 			di = &d
 			continue

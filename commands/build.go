@@ -16,6 +16,7 @@ import (
 
 	"github.com/containerd/console"
 	"github.com/docker/buildx/build"
+	"github.com/docker/buildx/builder"
 	"github.com/docker/buildx/monitor"
 	"github.com/docker/buildx/store/storeutil"
 	"github.com/docker/buildx/util/buildflags"
@@ -241,7 +242,18 @@ func runBuild(dockerCli command.Cli, in buildOptions) (err error) {
 		contextPathHash = in.contextPath
 	}
 
-	imageID, res, err := buildTargets(ctx, dockerCli, map[string]build.Options{defaultTargetName: opts}, in.progress, contextPathHash, in.builder, in.metadataFile, in.invoke != "")
+	b, err := builder.New(dockerCli, in.builder, nil)
+	if err != nil {
+		return err
+	}
+	if err = b.Validate(); err != nil {
+		return err
+	}
+	if err = b.LoadDrivers(ctx, false, contextPathHash); err != nil {
+		return err
+	}
+
+	imageID, res, err := buildTargets(ctx, dockerCli, b.Drivers, map[string]build.Options{defaultTargetName: opts}, in.progress, in.metadataFile, in.invoke != "")
 	err = wrapBuildError(err, false)
 	if err != nil {
 		return err
@@ -258,7 +270,7 @@ func runBuild(dockerCli command.Cli, in buildOptions) (err error) {
 			return errors.Errorf("failed to configure terminal: %v", err)
 		}
 		err = monitor.RunMonitor(ctx, cfg, func(ctx context.Context) (*build.ResultContext, error) {
-			_, rr, err := buildTargets(ctx, dockerCli, map[string]build.Options{defaultTargetName: opts}, in.progress, contextPathHash, in.builder, in.metadataFile, true)
+			_, rr, err := buildTargets(ctx, dockerCli, b.Drivers, map[string]build.Options{defaultTargetName: opts}, in.progress, in.metadataFile, true)
 			return rr, err
 		}, io.NopCloser(os.Stdin), nopCloser{os.Stdout}, nopCloser{os.Stderr})
 		if err != nil {
@@ -279,12 +291,7 @@ type nopCloser struct {
 
 func (c nopCloser) Close() error { return nil }
 
-func buildTargets(ctx context.Context, dockerCli command.Cli, opts map[string]build.Options, progressMode, contextPathHash, instance string, metadataFile string, allowNoOutput bool) (imageID string, res *build.ResultContext, err error) {
-	dis, err := getInstanceOrDefault(ctx, dockerCli, instance, contextPathHash)
-	if err != nil {
-		return "", nil, err
-	}
-
+func buildTargets(ctx context.Context, dockerCli command.Cli, drivers []builder.Driver, opts map[string]build.Options, progressMode string, metadataFile string, allowNoOutput bool) (imageID string, res *build.ResultContext, err error) {
 	ctx2, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
@@ -292,7 +299,7 @@ func buildTargets(ctx context.Context, dockerCli command.Cli, opts map[string]bu
 
 	var mu sync.Mutex
 	var idx int
-	resp, err := build.BuildWithResultHandler(ctx, dis, opts, storeutil.NewDockerClient(dockerCli), confutil.ConfigDir(dockerCli), printer, func(driverIndex int, gotRes *build.ResultContext) {
+	resp, err := build.BuildWithResultHandler(ctx, drivers, opts, storeutil.NewDockerClient(dockerCli), confutil.ConfigDir(dockerCli), printer, func(driverIndex int, gotRes *build.ResultContext) {
 		mu.Lock()
 		defer mu.Unlock()
 		if res == nil || driverIndex < idx {

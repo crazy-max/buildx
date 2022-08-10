@@ -9,6 +9,7 @@ import (
 	"github.com/containerd/containerd/platforms"
 	"github.com/docker/buildx/bake"
 	"github.com/docker/buildx/build"
+	"github.com/docker/buildx/builder"
 	"github.com/docker/buildx/store/storeutil"
 	"github.com/docker/buildx/util/confutil"
 	"github.com/docker/buildx/util/progress"
@@ -87,8 +88,14 @@ func runBake(dockerCli command.Cli, targets []string, in bakeOptions) (err error
 		}
 	}()
 
-	dis, err := getInstanceOrDefault(ctx, dockerCli, in.builder, contextPathHash)
+	b, err := builder.New(dockerCli, in.builder, nil)
 	if err != nil {
+		return err
+	}
+	if err = b.Validate(); err != nil {
+		return err
+	}
+	if err = b.LoadDrivers(ctx, false, contextPathHash); err != nil {
 		return err
 	}
 
@@ -96,7 +103,8 @@ func runBake(dockerCli command.Cli, targets []string, in bakeOptions) (err error
 	var inp *bake.Input
 
 	if url != "" {
-		files, inp, err = bake.ReadRemoteFiles(ctx, dis, url, in.files, printer)
+
+		files, inp, err = bake.ReadRemoteFiles(ctx, b.Drivers, url, in.files, printer)
 	} else {
 		files, err = bake.ReadLocalFiles(in.files)
 	}
@@ -146,7 +154,7 @@ func runBake(dockerCli command.Cli, targets []string, in bakeOptions) (err error
 		return nil
 	}
 
-	resp, err := build.Build(ctx, dis, bo, storeutil.NewDockerClient(dockerCli), confutil.ConfigDir(dockerCli), printer)
+	resp, err := build.Build(ctx, b.Drivers, bo, storeutil.NewDockerClient(dockerCli), confutil.ConfigDir(dockerCli), printer)
 	if err != nil {
 		return wrapBuildError(err, true)
 	}

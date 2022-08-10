@@ -16,6 +16,7 @@ type NodeGroup struct {
 	Driver  string
 	Nodes   []Node
 	Dynamic bool
+	Current bool
 }
 
 type Node struct {

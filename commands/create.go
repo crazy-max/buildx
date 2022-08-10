@@ -10,13 +10,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/buildx/builder"
 	"github.com/docker/buildx/driver"
+	remoteutil "github.com/docker/buildx/driver/remote/util"
 	"github.com/docker/buildx/store"
 	"github.com/docker/buildx/store/storeutil"
 	"github.com/docker/buildx/util/cobrautil"
 	"github.com/docker/buildx/util/confutil"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
+	dopts "github.com/docker/cli/opts"
 	"github.com/google/shlex"
 	"github.com/moby/buildkit/util/appcontext"
 	"github.com/pkg/errors"
@@ -234,17 +237,17 @@ func runCreate(dockerCli command.Cli, in createOptions, args []string) error {
 		return err
 	}
 
-	ngi := &nginfo{ng: ng}
+	b, err := builder.New(dockerCli, ng.Name, txn)
+	if err != nil {
+		return err
+	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
-	if err = loadNodeGroupData(timeoutCtx, dockerCli, ngi); err != nil {
-		return err
-	}
-	for _, info := range ngi.drivers {
-		if err := info.di.Err; err != nil {
-			err := errors.Errorf("failed to initialize builder %s (%s): %s", ng.Name, info.di.Name, err)
+	for _, d := range b.Drivers {
+		if err := d.Err; err != nil {
+			err := errors.Errorf("failed to initialize builder %s (%s): %s", ng.Name, d.Name, err)
 			var err2 error
 			if ngOriginal == nil {
 				err2 = txn.Remove(ng.Name)
@@ -269,7 +272,10 @@ func runCreate(dockerCli command.Cli, in createOptions, args []string) error {
 	}
 
 	if in.bootstrap {
-		if _, err = boot(ctx, ngi); err != nil {
+		if err = b.LoadDrivers(timeoutCtx, true, ""); err != nil {
+			return err
+		}
+		if _, err = b.Boot(ctx); err != nil {
 			return err
 		}
 	}
@@ -339,4 +345,28 @@ func csvToMap(in []string) (map[string]string, error) {
 		}
 	}
 	return m, nil
+}
+
+// validateEndpoint validates that endpoint is either a context or a docker host
+func validateEndpoint(dockerCli command.Cli, ep string) (string, error) {
+	dem, err := storeutil.GetDockerEndpoint(dockerCli, ep)
+	if err == nil && dem != nil {
+		if ep == "default" {
+			return dem.Host, nil
+		}
+		return ep, nil
+	}
+	h, err := dopts.ParseHost(true, ep)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse endpoint %s", ep)
+	}
+	return h, nil
+}
+
+// validateBuildkitEndpoint validates that endpoint is a valid buildkit host
+func validateBuildkitEndpoint(ep string) (string, error) {
+	if err := remoteutil.IsValidEndpoint(ep); err != nil {
+		return "", err
+	}
+	return ep, nil
 }

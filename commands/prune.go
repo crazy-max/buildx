@@ -7,7 +7,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/docker/buildx/build"
+	"github.com/docker/buildx/builder"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/opts"
@@ -54,12 +54,19 @@ func runPrune(dockerCli command.Cli, opts pruneOptions) error {
 		return nil
 	}
 
-	dis, err := getInstanceOrDefault(ctx, dockerCli, opts.builder, "")
+	b, err := builder.New(dockerCli, opts.builder, nil)
 	if err != nil {
 		return err
 	}
+	if err = b.Validate(); err != nil {
+		return err
+	}
+	if err = b.LoadDrivers(ctx, false, ""); err != nil {
+		return err
+	}
 
-	for _, di := range dis {
+	drivers := b.Drivers
+	for _, di := range drivers {
 		if di.Err != nil {
 			return err
 		}
@@ -90,8 +97,8 @@ func runPrune(dockerCli command.Cli, opts pruneOptions) error {
 	}()
 
 	eg, ctx := errgroup.WithContext(ctx)
-	for _, di := range dis {
-		func(di build.DriverInfo) {
+	for _, di := range drivers {
+		func(di builder.Driver) {
 			eg.Go(func() error {
 				if di.Driver != nil {
 					c, err := di.Driver.Client(ctx)

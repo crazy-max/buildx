@@ -7,8 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/docker/buildx/store"
-	"github.com/docker/buildx/store/storeutil"
+	"github.com/docker/buildx/builder"
 	"github.com/docker/buildx/util/imagetools"
 	"github.com/docker/buildx/util/progress"
 	"github.com/docker/cli/cli/command"
@@ -110,27 +109,14 @@ func runCreate(dockerCli command.Cli, in createOptions, args []string) error {
 
 	ctx := appcontext.Context()
 
-	txn, release, err := storeutil.GetStore(dockerCli)
+	b, err := builder.New(dockerCli, in.builder, nil)
 	if err != nil {
 		return err
 	}
-	defer release()
-
-	var ng *store.NodeGroup
-
-	if in.builder != "" {
-		ng, err = storeutil.GetNodeGroup(txn, dockerCli, in.builder)
-		if err != nil {
-			return err
-		}
-	} else {
-		ng, err = storeutil.GetCurrentInstance(txn, dockerCli)
-		if err != nil {
-			return err
-		}
+	if err = b.Validate(); err != nil {
+		return err
 	}
-
-	imageopt, err := storeutil.GetImageConfig(dockerCli, ng)
+	imageopt, err := b.GetImageOpt()
 	if err != nil {
 		return err
 	}
