@@ -27,6 +27,7 @@ jobs:
           - lint
           - validate-vendor
           - validate-docs
+          - validate-license
     steps:
       -
         name: Checkout

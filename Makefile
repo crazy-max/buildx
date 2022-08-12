@@ -58,6 +58,9 @@ validate-docs:
 validate-authors:
 	$(BUILDX_CMD) bake validate-authors
 
+validate-license:
+	$(BUILDX_CMD) bake validate-license
+
 test-driver:
 	./hack/test-driver
 
@@ -70,7 +73,10 @@ docs:
 authors:
 	$(BUILDX_CMD) bake update-authors
 
+license-headers:
+	$(BUILDX_CMD) bake update-license
+
 mod-outdated:
 	$(BUILDX_CMD) bake mod-outdated
 
-.PHONY: shell binaries binaries-cross install release validate-all lint validate-vendor validate-docs validate-authors vendor docs authors
+.PHONY: shell binaries binaries-cross install release validate-all lint validate-vendor validate-docs validate-authors validate-license vendor docs authors license-headers mod-outdated
