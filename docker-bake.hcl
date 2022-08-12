@@ -61,6 +61,13 @@ target "validate-authors" {
   output = ["type=cacheonly"]
 }
 
+target "validate-license" {
+  inherits = ["_common"]
+  dockerfile = "./hack/dockerfiles/license.Dockerfile"
+  target = "validate"
+  output = ["type=cacheonly"]
+}
+
 target "update-vendor" {
   inherits = ["_common"]
   dockerfile = "./hack/dockerfiles/vendor.Dockerfile"
@@ -81,6 +88,13 @@ target "update-docs" {
 target "update-authors" {
   inherits = ["_common"]
   dockerfile = "./hack/dockerfiles/authors.Dockerfile"
+  target = "update"
+  output = ["."]
+}
+
+target "update-license" {
+  inherits = ["_common"]
+  dockerfile = "./hack/dockerfiles/license.Dockerfile"
   target = "update"
   output = ["."]
 }
