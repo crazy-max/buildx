@@ -62,6 +62,13 @@ target "validate-authors" {
   output = ["type=cacheonly"]
 }
 
+target "validate-generated-files" {
+  inherits = ["_common"]
+  dockerfile = "./hack/dockerfiles/generate.Dockerfile"
+  target = "validate"
+  output = ["type=cacheonly"]
+}
+
 target "update-vendor" {
   inherits = ["_common"]
   dockerfile = "./hack/dockerfiles/vendor.Dockerfile"
@@ -82,6 +89,13 @@ target "update-docs" {
 target "update-authors" {
   inherits = ["_common"]
   dockerfile = "./hack/dockerfiles/authors.Dockerfile"
+  target = "update"
+  output = ["."]
+}
+
+target "update-generated-files" {
+  inherits = ["_common"]
+  dockerfile = "./hack/dockerfiles/generate.Dockerfile"
   target = "update"
   output = ["."]
 }
