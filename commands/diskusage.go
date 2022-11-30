@@ -8,7 +8,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/docker/buildx/build"
+	"github.com/docker/buildx/builder"
 	"github.com/docker/cli/cli"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/opts"
@@ -33,22 +33,26 @@ func runDiskUsage(dockerCli command.Cli, opts duOptions) error {
 		return err
 	}
 
-	dis, err := getInstanceOrDefault(ctx, dockerCli, opts.builder, "")
+	b, err := builder.New(dockerCli, builder.WithName(opts.builder))
 	if err != nil {
 		return err
 	}
 
-	for _, di := range dis {
+	drivers, err := b.LoadDrivers(ctx, false)
+	if err != nil {
+		return err
+	}
+	for _, di := range drivers {
 		if di.Err != nil {
 			return di.Err
 		}
 	}
 
-	out := make([][]*client.UsageInfo, len(dis))
+	out := make([][]*client.UsageInfo, len(drivers))
 
 	eg, ctx := errgroup.WithContext(ctx)
-	for i, di := range dis {
-		func(i int, di build.DriverInfo) {
+	for i, di := range drivers {
+		func(i int, di builder.Driver) {
 			eg.Go(func() error {
 				if di.Driver != nil {
 					c, err := di.Driver.Client(ctx)

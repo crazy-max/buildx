@@ -22,6 +22,7 @@ import (
 	"github.com/containerd/containerd/content/local"
 	"github.com/containerd/containerd/images"
 	"github.com/containerd/containerd/platforms"
+	"github.com/docker/buildx/builder"
 	"github.com/docker/buildx/driver"
 	"github.com/docker/buildx/util/dockerutil"
 	"github.com/docker/buildx/util/imagetools"
@@ -109,17 +110,8 @@ type NamedContext struct {
 	State *llb.State
 }
 
-type DriverInfo struct {
-	Driver      driver.Driver
-	Name        string
-	Platform    []specs.Platform
-	Err         error
-	ImageOpt    imagetools.Opt
-	ProxyConfig map[string]string
-}
-
-func filterAvailableDrivers(drivers []DriverInfo) ([]DriverInfo, error) {
-	out := make([]DriverInfo, 0, len(drivers))
+func filterAvailableDrivers(drivers []builder.Driver) ([]builder.Driver, error) {
+	out := make([]builder.Driver, 0, len(drivers))
 	err := errors.Errorf("no drivers found")
 	for _, di := range drivers {
 		if di.Err == nil && di.Driver != nil {
@@ -165,7 +157,7 @@ func allIndexes(l int) []int {
 	return out
 }
 
-func ensureBooted(ctx context.Context, drivers []DriverInfo, idxs []int, pw progress.Writer) ([]*client.Client, error) {
+func ensureBooted(ctx context.Context, drivers []builder.Driver, idxs []int, pw progress.Writer) ([]*client.Client, error) {
 	clients := make([]*client.Client, len(drivers))
 
 	baseCtx := ctx
@@ -215,7 +207,7 @@ func splitToDriverPairs(availablePlatforms map[string]int, opt map[string]Option
 	return m
 }
 
-func resolveDrivers(ctx context.Context, drivers []DriverInfo, opt map[string]Options, pw progress.Writer) (map[string][]driverPair, []*client.Client, error) {
+func resolveDrivers(ctx context.Context, drivers []builder.Driver, opt map[string]Options, pw progress.Writer) (map[string][]driverPair, []*client.Client, error) {
 	dps, clients, err := resolveDriversBase(ctx, drivers, opt, pw)
 	if err != nil {
 		return nil, nil, err
@@ -256,10 +248,10 @@ func resolveDrivers(ctx context.Context, drivers []DriverInfo, opt map[string]Op
 	return dps, clients, nil
 }
 
-func resolveDriversBase(ctx context.Context, drivers []DriverInfo, opt map[string]Options, pw progress.Writer) (map[string][]driverPair, []*client.Client, error) {
+func resolveDriversBase(ctx context.Context, drivers []builder.Driver, opt map[string]Options, pw progress.Writer) (map[string][]driverPair, []*client.Client, error) {
 	availablePlatforms := map[string]int{}
 	for i, d := range drivers {
-		for _, p := range d.Platform {
+		for _, p := range d.Platforms {
 			availablePlatforms[platforms.Format(p)] = i
 		}
 	}
@@ -362,7 +354,7 @@ func toRepoOnly(in string) (string, error) {
 	return strings.Join(out, ","), nil
 }
 
-func toSolveOpt(ctx context.Context, di DriverInfo, multiDriver bool, opt Options, bopts gateway.BuildOpts, configDir string, pw progress.Writer, dl dockerLoadCallback) (solveOpt *client.SolveOpt, release func(), err error) {
+func toSolveOpt(ctx context.Context, di builder.Driver, multiDriver bool, opt Options, bopts gateway.BuildOpts, configDir string, pw progress.Writer, dl dockerLoadCallback) (solveOpt *client.SolveOpt, release func(), err error) {
 	d := di.Driver
 	defers := make([]func(), 0, 2)
 	releaseF := func() {
@@ -778,11 +770,11 @@ func Invoke(ctx context.Context, cfg ContainerConfig) error {
 	return err
 }
 
-func Build(ctx context.Context, drivers []DriverInfo, opt map[string]Options, docker *dockerutil.Client, configDir string, w progress.Writer) (resp map[string]*client.SolveResponse, err error) {
+func Build(ctx context.Context, drivers []builder.Driver, opt map[string]Options, docker *dockerutil.Client, configDir string, w progress.Writer) (resp map[string]*client.SolveResponse, err error) {
 	return BuildWithResultHandler(ctx, drivers, opt, docker, configDir, w, nil, false)
 }
 
-func BuildWithResultHandler(ctx context.Context, drivers []DriverInfo, opt map[string]Options, docker *dockerutil.Client, configDir string, w progress.Writer, resultHandleFunc func(driverIndex int, rCtx *ResultContext), allowNoOutput bool) (resp map[string]*client.SolveResponse, err error) {
+func BuildWithResultHandler(ctx context.Context, drivers []builder.Driver, opt map[string]Options, docker *dockerutil.Client, configDir string, w progress.Writer, resultHandleFunc func(driverIndex int, rCtx *ResultContext), allowNoOutput bool) (resp map[string]*client.SolveResponse, err error) {
 	if len(drivers) == 0 {
 		return nil, errors.Errorf("driver required for build")
 	}
