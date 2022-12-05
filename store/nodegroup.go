@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/containerd/containerd/platforms"
 	"github.com/docker/buildx/util/confutil"
@@ -12,10 +13,11 @@ import (
 )
 
 type NodeGroup struct {
-	Name    string
-	Driver  string
-	Nodes   []Node
-	Dynamic bool
+	Name         string
+	Driver       string
+	Nodes        []Node
+	Dynamic      bool
+	LastActivity time.Time
 }
 
 type Node struct {
@@ -135,10 +137,11 @@ func (ng *NodeGroup) Copy() *NodeGroup {
 		nodes[i] = *node.Copy()
 	}
 	return &NodeGroup{
-		Name:    ng.Name,
-		Driver:  ng.Driver,
-		Nodes:   nodes,
-		Dynamic: ng.Dynamic,
+		Name:         ng.Name,
+		Driver:       ng.Driver,
+		Nodes:        nodes,
+		Dynamic:      ng.Dynamic,
+		LastActivity: ng.LastActivity,
 	}
 }
 

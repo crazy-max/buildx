@@ -108,6 +108,9 @@ func runBake(dockerCli command.Cli, targets []string, in bakeOptions) (err error
 		if err != nil {
 			return err
 		}
+		if err = updateLastActivity(dockerCli, b.NodeGroup); err != nil {
+			return err
+		}
 	}
 
 	if url != "" {

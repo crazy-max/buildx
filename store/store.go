@@ -2,9 +2,12 @@ package store
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
+	"time"
 
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/gofrs/flock"
@@ -14,6 +17,9 @@ import (
 
 func New(root string) (*Store, error) {
 	if err := os.MkdirAll(filepath.Join(root, "instances"), 0700); err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Join(root, "activity"), 0700); err != nil {
 		return nil, err
 	}
 	if err := os.MkdirAll(filepath.Join(root, "defaults"), 0700); err != nil {
@@ -81,6 +87,9 @@ func (t *Txn) NodeGroupByName(name string) (*NodeGroup, error) {
 	if err := json.Unmarshal(dt, &ng); err != nil {
 		return nil, err
 	}
+	if ng.LastActivity, err = t.GetLastActivity(&ng); err != nil {
+		return nil, err
+	}
 	return &ng, nil
 }
 
@@ -89,6 +98,7 @@ func (t *Txn) Save(ng *NodeGroup) error {
 	if err != nil {
 		return err
 	}
+	defer t.UpdateLastActivity(ng)
 	dt, err := json.Marshal(ng)
 	if err != nil {
 		return err
@@ -101,6 +111,7 @@ func (t *Txn) Remove(name string) error {
 	if err != nil {
 		return err
 	}
+	defer os.RemoveAll(filepath.Join(t.s.root, "activity", name))
 	return os.RemoveAll(filepath.Join(t.s.root, "instances", name))
 }
 
@@ -128,6 +139,33 @@ func (t *Txn) SetCurrent(key, name string, global, def bool) error {
 		os.RemoveAll(filepath.Join(t.s.root, "defaults", h)) // ignore error
 	}
 	return nil
+}
+
+func (t *Txn) UpdateLastActivity(ng *NodeGroup) error {
+	name := ng.Name
+	if ng.Name == "default" && len(ng.Nodes) == 1 {
+		name = ng.Nodes[0].Endpoint
+	}
+	return ioutils.AtomicWriteFile(filepath.Join(t.s.root, "activity", name), []byte(fmt.Sprintf("%d", time.Now().Unix())), 0600)
+}
+
+func (t *Txn) GetLastActivity(ng *NodeGroup) (la time.Time, _ error) {
+	name := ng.Name
+	if ng.Name == "default" && len(ng.Nodes) == 1 {
+		name = ng.Nodes[0].Endpoint
+	}
+	dt, err := os.ReadFile(filepath.Join(t.s.root, "activity", name))
+	if err != nil {
+		if os.IsNotExist(errors.Cause(err)) {
+			return la, nil
+		}
+		return la, err
+	}
+	i, err := strconv.ParseInt(string(dt), 10, 64)
+	if err != nil {
+		return la, err
+	}
+	return time.Unix(i, 0), nil
 }
 
 func (t *Txn) reset(key string) error {
