@@ -21,10 +21,15 @@ func setupTest(tb testing.TB) {
 	gitutil.GitCommit(tb, "initial commit")
 }
 
+func TestGetGitAttributesNotWorkingTree(t *testing.T) {
+	_, err := getGitAttributes(context.Background(), t.TempDir(), "Dockerfile")
+	assert.Error(t, err)
+}
+
 func TestGetGitAttributesNoContext(t *testing.T) {
 	setupTest(t)
 
-	gitattrs := getGitAttributes(context.Background(), "", "Dockerfile")
+	gitattrs, _ := getGitAttributes(context.Background(), "", "Dockerfile")
 	assert.Empty(t, gitattrs)
 }
 
@@ -87,7 +92,7 @@ func TestGetGitAttributes(t *testing.T) {
 			if tt.envGitInfo != "" {
 				t.Setenv("BUILDX_GIT_INFO", tt.envGitInfo)
 			}
-			gitattrs := getGitAttributes(context.Background(), ".", "Dockerfile")
+			gitattrs, _ := getGitAttributes(context.Background(), ".", "Dockerfile")
 			for _, e := range tt.expected {
 				assert.Contains(t, gitattrs, e)
 				assert.NotEmpty(t, gitattrs[e])
@@ -104,7 +109,7 @@ func TestGetGitAttributesWithRemote(t *testing.T) {
 	gitutil.GitSetRemote(t, "git@github.com:docker/buildx.git")
 
 	t.Setenv("BUILDX_GIT_LABELS", "true")
-	gitattrs := getGitAttributes(context.Background(), ".", "Dockerfile")
+	gitattrs, _ := getGitAttributes(context.Background(), ".", "Dockerfile")
 	assert.Equal(t, 5, len(gitattrs))
 	assert.Contains(t, gitattrs, "label:"+DockerfileLabel)
 	assert.Equal(t, "Dockerfile", gitattrs["label:"+DockerfileLabel])
@@ -127,7 +132,7 @@ func TestGetGitAttributesDirty(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join("dir", "Dockerfile"), df, 0644))
 
 	t.Setenv("BUILDX_GIT_LABELS", "true")
-	gitattrs := getGitAttributes(context.Background(), ".", "Dockerfile")
+	gitattrs, _ := getGitAttributes(context.Background(), ".", "Dockerfile")
 	assert.Equal(t, 3, len(gitattrs))
 	assert.Contains(t, gitattrs, "label:"+DockerfileLabel)
 	assert.Equal(t, "Dockerfile", gitattrs["label:"+DockerfileLabel])

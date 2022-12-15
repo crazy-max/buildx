@@ -9,12 +9,12 @@ import (
 
 	"github.com/docker/buildx/util/gitutil"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 const DockerfileLabel = "com.docker.image.source.entrypoint"
 
-func getGitAttributes(ctx context.Context, contextPath string, dockerfilePath string) (res map[string]string) {
+func getGitAttributes(ctx context.Context, contextPath string, dockerfilePath string) (res map[string]string, _ error) {
 	res = make(map[string]string)
 	if contextPath == "" {
 		return
@@ -24,13 +24,17 @@ func getGitAttributes(ctx context.Context, contextPath string, dockerfilePath st
 	if v, ok := os.LookupEnv("BUILDX_GIT_LABELS"); ok {
 		if v == "full" { // backward compatibility with old "full" mode
 			setGitLabels = true
-		} else if v, err := strconv.ParseBool(v); err == nil {
+		} else if v, err := strconv.ParseBool(v); err != nil {
+			return nil, errors.Wrap(err, "failed to parse BUILDX_GIT_LABELS as bool")
+		} else {
 			setGitLabels = v
 		}
 	}
 	setGitInfo := true
 	if v, ok := os.LookupEnv("BUILDX_GIT_INFO"); ok {
-		if v, err := strconv.ParseBool(v); err == nil {
+		if v, err := strconv.ParseBool(v); err != nil {
+			return nil, errors.Wrap(err, "failed to parse BUILDX_GIT_INFO as bool")
+		} else {
 			setGitInfo = v
 		}
 	}
@@ -44,14 +48,12 @@ func getGitAttributes(ctx context.Context, contextPath string, dockerfilePath st
 	if filepath.IsAbs(contextPath) {
 		wd = contextPath
 	} else {
-		cwd, _ := os.Getwd()
-		wd, _ = filepath.Abs(filepath.Join(cwd, contextPath))
+		wd, _ = filepath.Abs(contextPath)
 	}
 
 	gitc := gitutil.New(gitutil.WithContext(ctx), gitutil.WithWorkingDir(wd))
 	if !gitc.IsInsideWorkTree() {
-		logrus.Warnf("Unable to determine Git information")
-		return
+		return res, errors.Errorf("unable to determine Git information in %s", wd)
 	}
 
 	var resRevision, resSource, resDockerfilePath string

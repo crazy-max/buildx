@@ -1,7 +1,6 @@
 package gitutil
 
 import (
-	"bytes"
 	"context"
 	"os/exec"
 	"strings"
@@ -98,20 +97,15 @@ func (c *Git) run(args ...string) (string, error) {
 	}
 
 	args = append(extraArgs, args...)
-	cmd := exec.Command("git", args...)
+	cmd := exec.CommandContext(c.ctx, "git", args...)
 	if c.wd != "" {
 		cmd.Dir = c.wd
 	}
-
-	stdout := bytes.Buffer{}
-	stderr := bytes.Buffer{}
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return "", errors.New(stderr.String())
+	if out, err := cmd.Output(); err != nil {
+		return "", err
+	} else {
+		return string(out), nil
 	}
-	return stdout.String(), nil
 }
 
 func (c *Git) clean(out string, err error) (string, error) {
