@@ -13,6 +13,7 @@ import (
 	"github.com/docker/buildx/builder"
 	"github.com/docker/buildx/driver"
 	remoteutil "github.com/docker/buildx/driver/remote/util"
+	"github.com/docker/buildx/localstate"
 	"github.com/docker/buildx/store"
 	"github.com/docker/buildx/store/storeutil"
 	"github.com/docker/buildx/util/cobrautil"
@@ -167,6 +168,13 @@ func runCreate(dockerCli command.Cli, in createOptions, args []string) error {
 	var setEp bool
 	if in.actionLeave {
 		if err := ng.Leave(in.nodeName); err != nil {
+			return err
+		}
+		ls, err := localstate.New(confutil.ConfigDir(dockerCli))
+		if err != nil {
+			return err
+		}
+		if err := ls.RemoveBuilderNode(ng.Name, in.nodeName); err != nil {
 			return err
 		}
 	} else {
