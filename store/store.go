@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/docker/buildx/localstate"
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/gofrs/flock"
 	"github.com/opencontainers/go-digest"
@@ -118,6 +119,18 @@ func (t *Txn) Remove(name string) error {
 		return err
 	}
 	if err := t.RemoveLastActivity(name); err != nil {
+		return err
+	}
+	ls, err := localstate.New(t.s.root)
+	if err != nil {
+		return err
+	}
+	lstx, lsrelease, err := ls.Txn()
+	if err != nil {
+		return err
+	}
+	defer lsrelease()
+	if err := lstx.RemoveForBuilder(name); err != nil {
 		return err
 	}
 	return os.RemoveAll(filepath.Join(t.s.root, instanceDir, name))
