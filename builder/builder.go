@@ -2,6 +2,7 @@ package builder
 
 import (
 	"context"
+	errstd "errors"
 	"os"
 	"sort"
 	"sync"
@@ -181,6 +182,16 @@ func (b *Builder) Boot(ctx context.Context) (bool, error) {
 	err1 := printer.Wait()
 	if err == nil {
 		err = err1
+	}
+
+	var errs []error
+	for _, d := range b.nodes {
+		if d.Err != nil {
+			errs = append(errs, d.Err)
+		}
+	}
+	if len(errs) == len(toBoot) {
+		return false, errors.Wrapf(errstd.Join(errs...), "failed to boot builder %s", b.Name)
 	}
 
 	return true, err
