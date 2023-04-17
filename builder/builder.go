@@ -182,6 +182,9 @@ func (b *Builder) Boot(ctx context.Context) (bool, error) {
 	if err == nil {
 		err = err1
 	}
+	if err != nil && len(toBoot) == 1 {
+		return false, err
+	}
 
 	return true, err
 }
