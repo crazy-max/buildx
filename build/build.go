@@ -1823,8 +1823,8 @@ func saveLocalState(so client.SolveOpt, opt Options, node builder.Node, configDi
 			return err
 		}
 		if err := ls.SaveRef(node.Builder, node.Name, so.Ref, localstate.State{
-			LocalPath:      lp,
-			DockerfilePath: dp,
+			LocalPath:      filepath.ToSlash(lp),
+			DockerfilePath: filepath.ToSlash(dp),
 		}); err != nil {
 			return err
 		}
