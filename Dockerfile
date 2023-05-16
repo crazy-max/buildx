@@ -6,10 +6,14 @@ ARG XX_VERSION=1.1.2
 # for integration tests
 ARG GOTESTSUM_VERSION=v1.9.0
 ARG BUILDKIT_VERSION=v0.11.6
-ARG DOCKER_VERSION=20.10.14
+ARG DOCKER_VERSION=24.0.0
+ARG DOCKER_ALT_VERSION_230=23.0.6
+ARG DOCKER_ALT_VERSION_2010=20.10.25
 ARG REGISTRY_VERSION=2.8.0
 
 FROM docker:$DOCKER_VERSION AS docker
+FROM docker:$DOCKER_ALT_VERSION_230 AS docker-230
+FROM docker:$DOCKER_ALT_VERSION_2010 AS docker-2010
 FROM registry:$REGISTRY_VERSION AS registry
 FROM moby/buildkit:$BUILDKIT_VERSION AS buildkit
 
@@ -77,11 +81,14 @@ FROM binaries-$TARGETOS AS binaries
 ARG BUILDKIT_SBOM_SCAN_STAGE=true
 
 FROM gobase AS integration-test-base
+ENV BUILDX_INTEGRATION_DOCKER_EXTRA="docker-23.0=/opt/docker-alt-230/bin,docker-20.10=/opt/docker-alt-2010/bin"
 COPY --link --from=gotestsum /out/gotestsum /usr/bin/
 COPY --link --from=registry /bin/registry /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildkitd /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildctl /usr/bin/
-COPY --link --from=docker /usr/local/bin /usr/local/bin/
+COPY --link --from=docker /usr/local/bin /usr/bin/
+COPY --link --from=docker-230 /usr/local/bin /opt/docker-alt-230/bin/
+COPY --link --from=docker-2010 /usr/local/bin /opt/docker-alt-2010/bin/
 COPY --link --from=binaries /buildx /usr/bin/
 
 FROM integration-test-base AS integration-test
