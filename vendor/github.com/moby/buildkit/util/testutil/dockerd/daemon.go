@@ -28,8 +28,6 @@ const (
 	defaultDockerdBinary = "dockerd"
 )
 
-type Option func(*Daemon)
-
 type Daemon struct {
 	root          string
 	folder        string
@@ -46,6 +44,14 @@ type Daemon struct {
 }
 
 var sockRoot = filepath.Join(os.TempDir(), "docker-integration")
+
+type Option func(*Daemon)
+
+func WithDockerdBinary(bin string) Option {
+	return func(d *Daemon) {
+		d.dockerdBinary = bin
+	}
+}
 
 func NewDaemon(workingDir string, ops ...Option) (*Daemon, error) {
 	if err := os.MkdirAll(sockRoot, 0700); err != nil {
@@ -85,7 +91,7 @@ func (d *Daemon) Sock() string {
 	return "unix://" + d.sockPath
 }
 
-func (d *Daemon) StartWithError(daemonLogs map[string]*bytes.Buffer, providedArgs ...string) error {
+func (d *Daemon) StartWithError(daemonLogs map[string]*bytes.Buffer, extraEnv []string, providedArgs ...string) error {
 	dockerdBinary, err := exec.LookPath(d.dockerdBinary)
 	if err != nil {
 		return errors.Wrapf(err, "[%s] could not find docker binary in $PATH", d.id)
@@ -127,7 +133,11 @@ func (d *Daemon) StartWithError(daemonLogs map[string]*bytes.Buffer, providedArg
 
 	d.args = append(d.args, providedArgs...)
 	d.cmd = exec.Command(dockerdBinary, d.args...)
-	d.cmd.Env = append(os.Environ(), "DOCKER_SERVICE_PREFER_OFFLINE_IMAGE=1", "BUILDKIT_DEBUG_EXEC_OUTPUT=1", "BUILDKIT_DEBUG_PANIC_ON_ERROR=1")
+	d.cmd.Env = append(os.Environ(), append([]string{
+		"DOCKER_SERVICE_PREFER_OFFLINE_IMAGE=1",
+		"BUILDKIT_DEBUG_EXEC_OUTPUT=1",
+		"BUILDKIT_DEBUG_PANIC_ON_ERROR=1"},
+		extraEnv...)...)
 
 	if daemonLogs != nil {
 		b := new(bytes.Buffer)

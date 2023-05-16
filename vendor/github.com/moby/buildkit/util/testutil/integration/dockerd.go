@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -19,47 +20,81 @@ import (
 
 // InitDockerdWorker registers a dockerd worker with the global registry.
 func InitDockerdWorker() {
+	dockerdUnsupported := []string{
+		FeatureCacheExport,
+		FeatureCacheImport,
+		FeatureCacheBackendAzblob,
+		FeatureCacheBackendGha,
+		FeatureCacheBackendLocal,
+		FeatureCacheBackendRegistry,
+		FeatureCacheBackendS3,
+		FeatureDirectPush,
+		FeatureImageExporter,
+		FeatureMultiCacheExport,
+		FeatureMultiPlatform,
+		FeatureOCIExporter,
+		FeatureOCILayout,
+		FeatureProvenance,
+		FeatureSBOM,
+		FeatureSecurityMode,
+		FeatureCNINetwork,
+	}
 	Register(&Moby{
-		ID:         "dockerd",
-		IsRootless: false,
-		Unsupported: []string{
-			FeatureCacheExport,
-			FeatureCacheImport,
-			FeatureCacheBackendAzblob,
-			FeatureCacheBackendGha,
-			FeatureCacheBackendLocal,
-			FeatureCacheBackendRegistry,
-			FeatureCacheBackendS3,
-			FeatureDirectPush,
-			FeatureImageExporter,
-			FeatureMultiCacheExport,
-			FeatureMultiPlatform,
-			FeatureOCIExporter,
-			FeatureOCILayout,
-			FeatureProvenance,
-			FeatureSBOM,
-			FeatureSecurityMode,
-			FeatureCNINetwork,
-		},
+		ID:          "dockerd",
+		Dockerd:     "dockerd",
+		IsRootless:  false,
+		Unsupported: dockerdUnsupported,
 	})
+
+	dockerdContainerdUnsupported := []string{
+		FeatureSecurityMode,
+		FeatureCNINetwork,
+	}
 	Register(&Moby{
 		ID:                    "dockerd-containerd",
+		Dockerd:               "dockerd",
 		IsRootless:            false,
 		ContainerdSnapshotter: true,
-		Unsupported: []string{
-			FeatureSecurityMode,
-			FeatureCNINetwork,
-		},
+		Unsupported:           dockerdContainerdUnsupported,
 	})
+
+	// e.g. `docker-23.0=/opt/docker-alt-230/bin,docker-20.10=/opt/docker-alt-2010/bin`
+	if s := os.Getenv("BUILDKIT_INTEGRATION_DOCKERD_EXTRA"); s != "" {
+		entries := strings.Split(s, ",")
+		for _, entry := range entries {
+			pair := strings.Split(strings.TrimSpace(entry), "=")
+			if len(pair) != 2 {
+				panic(errors.Errorf("unexpected BUILDKIT_INTEGRATION_DOCKERD_EXTRA: %q", s))
+			}
+			name, bin := pair[0], pair[1]
+			Register(&Moby{
+				ID:         name,
+				Dockerd:    filepath.Join(bin, "dockerd"),
+				IsRootless: false,
+				// override PATH to make sure that the expected version of the binaries are used
+				ExtraEnv:    []string{fmt.Sprintf("PATH=%s:%s", bin, os.Getenv("PATH"))},
+				Unsupported: dockerdUnsupported,
+			})
+			Register(&Moby{
+				ID:                    name + "-containerd",
+				Dockerd:               filepath.Join(bin, "dockerd"),
+				IsRootless:            false,
+				ContainerdSnapshotter: true,
+				// override PATH to make sure that the expected version of the binaries are used
+				ExtraEnv:    []string{fmt.Sprintf("PATH=%s:%s", bin, os.Getenv("PATH"))},
+				Unsupported: dockerdContainerdUnsupported,
+			})
+		}
+	}
 }
 
 type Moby struct {
-	ID         string
-	IsRootless bool
-
+	ID                    string
+	Dockerd               string
+	IsRootless            bool
 	ContainerdSnapshotter bool
-
-	Unsupported []string
+	ExtraEnv              []string
+	Unsupported           []string
 }
 
 func (c Moby) Name() string {
@@ -124,7 +159,7 @@ func (c Moby) New(ctx context.Context, cfg *BackendConfig) (b Backend, cl func()
 		return nil, nil, err
 	}
 
-	d, err := dockerd.NewDaemon(workDir)
+	d, err := dockerd.NewDaemon(workDir, dockerd.WithDockerdBinary(c.Dockerd))
 	if err != nil {
 		return nil, nil, errors.Errorf("new daemon error: %q, %s", err, formatLogs(cfg.Logs))
 	}
@@ -143,7 +178,7 @@ func (c Moby) New(ctx context.Context, cfg *BackendConfig) (b Backend, cl func()
 		dockerdFlags = append(dockerdFlags, strings.Split(strings.TrimSpace(s), "\n")...)
 	}
 
-	err = d.StartWithError(cfg.Logs, dockerdFlags...)
+	err = d.StartWithError(cfg.Logs, c.ExtraEnv, dockerdFlags...)
 	if err != nil {
 		return nil, nil, err
 	}
