@@ -2,12 +2,16 @@
 
 ARG GO_VERSION=1.20
 ARG XX_VERSION=1.1.2
-ARG DOCKERD_VERSION=20.10.14
-ARG GOTESTSUM_VERSION=v1.9.0
-ARG REGISTRY_VERSION=2.8.0
-ARG BUILDKIT_VERSION=v0.11.6
 
-FROM docker:$DOCKERD_VERSION AS dockerd-release
+# for integration tests
+ARG GOTESTSUM_VERSION=v1.9.0
+ARG BUILDKIT_VERSION=v0.11.6
+ARG DOCKER_VERSION=20.10.14
+ARG REGISTRY_VERSION=2.8.0
+
+FROM docker:$DOCKER_VERSION AS docker
+FROM registry:$REGISTRY_VERSION AS registry
+FROM moby/buildkit:$BUILDKIT_VERSION AS buildkit
 
 # xx is a helper for cross-compilation
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
@@ -20,10 +24,6 @@ RUN apk add --no-cache file git
 ENV GOFLAGS=-mod=vendor
 ENV CGO_ENABLED=0
 WORKDIR /src
-
-FROM registry:$REGISTRY_VERSION AS registry
-
-FROM moby/buildkit:$BUILDKIT_VERSION AS buildkit
 
 FROM gobase AS gotestsum
 ARG GOTESTSUM_VERSION
@@ -77,11 +77,11 @@ FROM binaries-$TARGETOS AS binaries
 ARG BUILDKIT_SBOM_SCAN_STAGE=true
 
 FROM gobase AS integration-test-base
-RUN apk add --no-cache docker runc containerd
 COPY --link --from=gotestsum /out/gotestsum /usr/bin/
 COPY --link --from=registry /bin/registry /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildkitd /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildctl /usr/bin/
+COPY --link --from=docker /usr/local/bin /usr/local/bin/
 COPY --link --from=binaries /buildx /usr/bin/
 
 FROM integration-test-base AS integration-test
@@ -102,13 +102,12 @@ FROM scratch AS release
 COPY --from=releaser /out/ /
 
 # Shell
-FROM docker:$DOCKERD_VERSION AS dockerd-release
 FROM alpine AS shell
 RUN apk add --no-cache iptables tmux git vim less openssh
 RUN mkdir -p /usr/local/lib/docker/cli-plugins && ln -s /usr/local/bin/buildx /usr/local/lib/docker/cli-plugins/docker-buildx
 COPY ./hack/demo-env/entrypoint.sh /usr/local/bin
 COPY ./hack/demo-env/tmux.conf /root/.tmux.conf
-COPY --from=dockerd-release /usr/local/bin /usr/local/bin
+COPY --from=docker /usr/local/bin /usr/local/bin
 WORKDIR /work
 COPY ./hack/demo-env/examples .
 COPY --from=binaries / /usr/local/bin/
