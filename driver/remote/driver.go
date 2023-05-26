@@ -51,6 +51,7 @@ func (d *Driver) Info(ctx context.Context) (*driver.Info, error) {
 			Status: driver.Inactive,
 		}, nil
 	}
+	defer c.Close()
 
 	if _, err := c.ListWorkers(ctx); err != nil {
 		return &driver.Info{
