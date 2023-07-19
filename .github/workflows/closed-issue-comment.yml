@@ -1,0 +1,26 @@
+name: closed-issue-comment
+on:
+  issues:
+    types:
+      - closed
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        uses: actions/github-script@v6
+        with:
+          script: |
+            message = `### :warning: COMMENT VISIBILITY NOTICE
+            Comments on closed issues are hard for our team to see.
+            If you need more assistance, please open a new issue that references
+            this one. If you wish to keep having a conversation with other
+            community members under this issue, feel free to do so.`
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            })
