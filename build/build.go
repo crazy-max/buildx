@@ -391,7 +391,7 @@ func toSolveOpt(ctx context.Context, node builder.Node, multiDriver bool, opt Op
 
 	for _, e := range opt.CacheTo {
 		if e.Type != "inline" && !nodeDriver.Features(ctx)[driver.CacheExport] {
-			return nil, nil, notSupported(nodeDriver, driver.CacheExport)
+			return nil, nil, cacheExportNotSupported(nodeDriver)
 		}
 	}
 
@@ -529,7 +529,7 @@ func toSolveOpt(ctx context.Context, node builder.Node, multiDriver bool, opt Op
 	// set up exporters
 	for i, e := range opt.Exports {
 		if e.Type == "oci" && !nodeDriver.Features(ctx)[driver.OCIExporter] {
-			return nil, nil, notSupported(nodeDriver, driver.OCIExporter)
+			return nil, nil, exporterNotSupported(nodeDriver, driver.OCIExporter)
 		}
 		if e.Type == "docker" {
 			features := docker.Features(ctx, e.Attrs["context"])
@@ -555,7 +555,7 @@ func toSolveOpt(ctx context.Context, node builder.Node, multiDriver bool, opt Op
 					opt.Exports[i].Output = wrapWriteCloser(w)
 				}
 			} else if !nodeDriver.Features(ctx)[driver.DockerExporter] {
-				return nil, nil, notSupported(nodeDriver, driver.DockerExporter)
+				return nil, nil, exporterNotSupported(nodeDriver, driver.DockerExporter)
 			}
 		}
 		if e.Type == "image" && nodeDriver.IsMobyDriver() {
@@ -627,7 +627,7 @@ func toSolveOpt(ctx context.Context, node builder.Node, multiDriver bool, opt Op
 			pp[i] = platforms.Format(p)
 		}
 		if len(pp) > 1 && !nodeDriver.Features(ctx)[driver.MultiPlatform] {
-			return nil, nil, notSupported(nodeDriver, driver.MultiPlatform)
+			return nil, nil, multiPlatformBuildNotSupported(nodeDriver)
 		}
 		so.FrontendAttrs["platform"] = strings.Join(pp, ",")
 	}
@@ -1560,8 +1560,28 @@ func waitContextDeps(ctx context.Context, index int, results *waitmap.Map, so *c
 	return nil
 }
 
-func notSupported(d driver.Driver, f driver.Feature) error {
-	return errors.Errorf("%s feature is currently not supported for %s driver. Please switch to a different driver (eg. \"docker buildx create --use\")", f, d.Factory().Name())
+func cacheExportNotSupported(d driver.Driver) error {
+	return errors.Errorf(`Cache export is not supported for the %s driver.
+
+Switch to a different driver and try again.
+
+Learn more at https://docs.docker.com/go/build-cache-backends/`, d.Factory().Name())
+}
+
+func exporterNotSupported(d driver.Driver, f driver.Feature) error {
+	return errors.Errorf(`%s is not supported for the %s driver.
+
+Switch to a different driver and try again.
+
+Learn more at https://docs.docker.com/go/build-exporters/`, f, d.Factory().Name())
+}
+
+func multiPlatformBuildNotSupported(d driver.Driver) error {
+	return errors.Errorf(`Multi-platform builds is not supported for the %s driver without the containerd image store.
+
+Switch to a different driver, or turn on the containerd image store, and try again.
+
+Learn more at https://docs.docker.com/go/build-multi-platform/`, d.Factory().Name())
 }
 
 func noDefaultLoad() bool {

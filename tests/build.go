@@ -40,6 +40,7 @@ var buildTests = []func(t *testing.T, sb integration.Sandbox){
 	testBuildMobyFromLocalImage,
 	testBuildDetailsLink,
 	testBuildProgress,
+	testBuildDockerWorkerErrors,
 }
 
 func testBuild(t *testing.T, sb integration.Sandbox) {
@@ -312,4 +313,30 @@ func testBuildProgress(t *testing.T, sb integration.Sandbox) {
 	require.Contains(t, string(plainOutput), fmt.Sprintf(`#0 building with "%s" instance using %s driver`, name, driver))
 	require.Contains(t, string(plainOutput), "[internal] load build definition from Dockerfile")
 	require.Contains(t, string(plainOutput), "[base 1/3] FROM docker.io/library/busybox:latest")
+}
+
+func testBuildDockerWorkerErrors(t *testing.T, sb integration.Sandbox) {
+	if !isDockerWorker(sb) {
+		t.Skip("skipping test for non-docker workers")
+	}
+
+	dir := createTestProject(t)
+
+	// registry cache backend
+	cmd := buildxCmd(sb, withArgs("build", "--cache-to=type=registry", dir))
+	_, err := cmd.CombinedOutput()
+	require.Contains(t, err.Error(), "Cache export is not supported")
+	require.Contains(t, err.Error(), "https://docs.docker.com/go/build-cache-backends/")
+
+	// oci exporter
+	cmd = buildxCmd(sb, withArgs("build", (fmt.Sprintf("--output=type=oci,dest=%s/result", dir)), dir))
+	_, err = cmd.CombinedOutput()
+	require.Contains(t, err.Error(), "OCI exporter feature is not supported")
+	require.Contains(t, err.Error(), "https://docs.docker.com/go/build-exporters/")
+
+	// multi-platform
+	cmd = buildxCmd(sb, withArgs("build", "--platform=linux/amd64,linux/arm64", dir))
+	_, err = cmd.CombinedOutput()
+	require.Contains(t, err.Error(), "Multi-platform builds is not supported")
+	require.Contains(t, err.Error(), "https://docs.docker.com/go/build-multi-platform/")
 }
