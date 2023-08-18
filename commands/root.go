@@ -92,6 +92,9 @@ func addCommands(cmd *cobra.Command, dockerCli command.Cli) {
 			newDebuggableBuild(dockerCli, opts),
 		))
 		remote.AddControllerCommands(cmd, dockerCli)
+
+		// TODO: remove debug-shell dummy command once docs is fixed.
+		cmd.AddCommand(debugShellCmd(dockerCli))
 	}
 
 	cmd.RegisterFlagCompletionFunc( //nolint:errcheck
