@@ -1577,7 +1577,7 @@ Learn more at https://docs.docker.com/go/build-exporters/`, f, d.Factory().Name(
 }
 
 func multiPlatformBuildNotSupported(d driver.Driver) error {
-	return errors.Errorf(`Multi-platform builds is not supported for the %s driver without the containerd image store.
+	return errors.Errorf(`Multi-platform build is not supported for the %s driver without the containerd image store.
 
 Switch to a different driver, or turn on the containerd image store, and try again.
 
