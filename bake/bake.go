@@ -18,7 +18,6 @@ import (
 	controllerapi "github.com/docker/buildx/controller/pb"
 	"github.com/docker/buildx/util/buildflags"
 	"github.com/docker/buildx/util/platformutil"
-
 	"github.com/docker/cli/cli/config"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/moby/buildkit/client/llb"
@@ -1038,6 +1037,9 @@ func toBuildOpt(t *Target, inp *Input) (*build.Options, error) {
 	if t.Dockerfile != nil {
 		dockerfilePath = *t.Dockerfile
 	}
+	if !strings.HasPrefix(dockerfilePath, "cwd://") {
+		dockerfilePath = path.Clean(dockerfilePath)
+	}
 
 	bi := build.Inputs{
 		ContextPath:    contextPath,
@@ -1048,6 +1050,17 @@ func toBuildOpt(t *Target, inp *Input) (*build.Options, error) {
 		bi.DockerfileInline = *t.DockerfileInline
 	}
 	updateContext(&bi, inp)
+	if strings.HasPrefix(bi.DockerfilePath, "cwd://") {
+		bi.DockerfilePath = path.Clean(strings.TrimPrefix(bi.DockerfilePath, "cwd://"))
+		if err := checkPath(bi.DockerfilePath); err != nil {
+			return nil, err
+		}
+		var err error
+		bi.DockerfilePath, err = filepath.Abs(bi.DockerfilePath)
+		if err != nil {
+			return nil, err
+		}
+	}
 	if strings.HasPrefix(bi.ContextPath, "cwd://") {
 		bi.ContextPath = path.Clean(strings.TrimPrefix(bi.ContextPath, "cwd://"))
 	}
