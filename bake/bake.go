@@ -1060,6 +1060,10 @@ func toBuildOpt(t *Target, inp *Input) (*build.Options, error) {
 		if err != nil {
 			return nil, err
 		}
+	} else if !build.IsRemoteURL(bi.DockerfilePath) && strings.HasPrefix(bi.ContextPath, "cwd://") && (inp != nil && build.IsRemoteURL(inp.URL)) {
+		if _, err := os.Stat(filepath.Join(path.Clean(strings.TrimPrefix(bi.ContextPath, "cwd://")), bi.DockerfilePath)); err == nil {
+			return nil, errors.Errorf("reading a local dockerfile for a remote build invocation is not allowed when using a local context")
+		}
 	}
 	if strings.HasPrefix(bi.ContextPath, "cwd://") {
 		bi.ContextPath = path.Clean(strings.TrimPrefix(bi.ContextPath, "cwd://"))
