@@ -109,6 +109,7 @@ type Inputs struct {
 	DockerfilePath   string
 	InStream         io.Reader
 	ContextState     *llb.State
+	DockerfileState  *llb.State
 	DockerfileInline string
 	NamedContexts    map[string]NamedContext
 }
@@ -1341,7 +1342,12 @@ func LoadInputs(ctx context.Context, d *driver.DriverHandle, inp Inputs, pw prog
 	if inp.DockerfileInline != "" {
 		dockerfileReader = strings.NewReader(inp.DockerfileInline)
 	}
-
+	if inp.DockerfileState != nil {
+		if target.FrontendInputs == nil {
+			target.FrontendInputs = make(map[string]llb.State)
+		}
+		target.FrontendInputs["dockerfile"] = *inp.DockerfileState
+	}
 	if dockerfileReader != nil {
 		dockerfileDir, err = createTempDockerfile(dockerfileReader)
 		if err != nil {

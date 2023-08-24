@@ -365,12 +365,13 @@ COPY foo /foo
 	dirSpec := tmpdir(
 		t,
 		fstest.CreateFile("docker-bake.hcl", bakefile, 0600),
+		fstest.CreateFile("Dockerfile.app", dockerfileApp, 0600),
 	)
 	dirSrc := tmpdir(
 		t,
-		fstest.CreateFile("Dockerfile.app", dockerfileApp, 0600),
 		fstest.CreateFile("foo", []byte("foo"), 0600),
 	)
+	dirDest := t.TempDir()
 
 	git, err := gitutil.New(gitutil.WithWorkingDir(dirSpec))
 	require.NoError(t, err)
@@ -383,8 +384,8 @@ COPY foo /foo
 	out, err := bakeCmd(
 		sb,
 		withDir(dirSrc),
-		withArgs(addr, "--set", "*.output=type=cacheonly"),
+		withArgs(addr, "--set", "*.output=type=local,dest="+dirDest),
 	)
-	require.Error(t, err, out)
-	require.Contains(t, out, "reading a dockerfile for a remote build invocation is currently not supported")
+	require.NoError(t, err, out)
+	require.FileExists(t, filepath.Join(dirDest, "foo"))
 }

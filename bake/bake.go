@@ -960,6 +960,32 @@ func updateContext(t *build.Inputs, inp *Input) {
 	t.ContextState = &st
 }
 
+func updateDockerfile(t *build.Inputs, inp *Input) error {
+	if strings.HasPrefix(t.DockerfilePath, "cwd://") {
+		t.DockerfilePath = path.Clean(strings.TrimPrefix(t.DockerfilePath, "cwd://"))
+		if err := checkPath(t.DockerfilePath); err != nil {
+			return err
+		}
+		var err error
+		t.DockerfilePath, err = filepath.Abs(t.DockerfilePath)
+		return err
+	}
+
+	if build.IsRemoteURL(t.DockerfilePath) {
+		return nil
+	}
+	if inp == nil || inp.State == nil {
+		return nil
+	}
+
+	st := llb.Scratch().File(
+		llb.Copy(*inp.State, t.DockerfilePath, "/"),
+		llb.WithCustomNamef("set dockerfile to %s", t.DockerfilePath),
+	)
+	t.DockerfileState = &st
+	return nil
+}
+
 // validateContextsEntitlements is a basic check to ensure contexts do not
 // escape local directories when loaded from remote sources. This is to be
 // replaced with proper entitlements support in the future.
@@ -1050,20 +1076,8 @@ func toBuildOpt(t *Target, inp *Input) (*build.Options, error) {
 		bi.DockerfileInline = *t.DockerfileInline
 	}
 	updateContext(&bi, inp)
-	if strings.HasPrefix(bi.DockerfilePath, "cwd://") {
-		bi.DockerfilePath = path.Clean(strings.TrimPrefix(bi.DockerfilePath, "cwd://"))
-		if err := checkPath(bi.DockerfilePath); err != nil {
-			return nil, err
-		}
-		var err error
-		bi.DockerfilePath, err = filepath.Abs(bi.DockerfilePath)
-		if err != nil {
-			return nil, err
-		}
-	} else if !build.IsRemoteURL(bi.DockerfilePath) && strings.HasPrefix(bi.ContextPath, "cwd://") && (inp != nil && build.IsRemoteURL(inp.URL)) {
-		if _, err := os.Stat(filepath.Join(path.Clean(strings.TrimPrefix(bi.ContextPath, "cwd://")), bi.DockerfilePath)); err == nil {
-			return nil, errors.Errorf("reading a dockerfile for a remote build invocation is currently not supported")
-		}
+	if err := updateDockerfile(&bi, inp); err != nil {
+		return nil, err
 	}
 	if strings.HasPrefix(bi.ContextPath, "cwd://") {
 		bi.ContextPath = path.Clean(strings.TrimPrefix(bi.ContextPath, "cwd://"))
