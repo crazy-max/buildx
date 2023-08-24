@@ -982,7 +982,7 @@ func updateDockerfile(t *build.Inputs, inp *Input) error {
 	}
 
 	st := llb.Scratch().File(
-		llb.Copy(*inp.State, t.DockerfilePath, filepath.Dir(path.Clean(t.DockerfilePath))),
+		llb.Copy(*inp.State, t.DockerfilePath, filepath.Dir(t.DockerfilePath)),
 		llb.WithCustomNamef("set dockerfile to %s", t.DockerfilePath),
 	)
 	t.DockerfileState = &st
