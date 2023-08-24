@@ -379,7 +379,7 @@ COPY foo /foo
 
 	gitutil.GitInit(git, t)
 	gitutil.GitAdd(git, t, "docker-bake.hcl")
-	gitutil.GitAdd(git, t, "bar/Dockerfile.app")
+	gitutil.GitAdd(git, t, "Dockerfile.app")
 	gitutil.GitCommit(git, t, "initial commit")
 	addr := gitutil.GitServeHTTP(git, t)
 

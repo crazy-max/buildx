@@ -974,6 +974,9 @@ func updateDockerfile(t *build.Inputs, inp *Input) error {
 	if build.IsRemoteURL(t.DockerfilePath) {
 		return nil
 	}
+	if !strings.HasPrefix(t.ContextPath, "cwd://") {
+		return nil
+	}
 	if inp == nil || inp.State == nil {
 		return nil
 	}
