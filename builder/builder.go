@@ -165,6 +165,8 @@ func (b *Builder) Boot(ctx context.Context) (bool, error) {
 
 	baseCtx := ctx
 	eg, _ := errgroup.WithContext(ctx)
+	errCh := make(chan error, len(toBoot))
+	var mu sync.Mutex
 	for _, idx := range toBoot {
 		func(idx int) {
 			eg.Go(func() error {
@@ -172,6 +174,9 @@ func (b *Builder) Boot(ctx context.Context) (bool, error) {
 				_, err := driver.Boot(ctx, baseCtx, b.nodes[idx].Driver, pw)
 				if err != nil {
 					b.nodes[idx].Err = err
+					mu.Lock()
+					errCh <- err
+					mu.Unlock()
 				}
 				return nil
 			})
@@ -179,11 +184,15 @@ func (b *Builder) Boot(ctx context.Context) (bool, error) {
 	}
 
 	err = eg.Wait()
+	close(errCh)
 	err1 := printer.Wait()
 	if err == nil {
 		err = err1
 	}
 
+	if err == nil && len(errCh) == len(toBoot) {
+		return false, <-errCh
+	}
 	return true, err
 }
 
