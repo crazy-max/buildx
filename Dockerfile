@@ -7,6 +7,7 @@ ARG DOCKER_VERSION=24.0.6
 ARG GOTESTSUM_VERSION=v1.9.0
 ARG REGISTRY_VERSION=2.8.0
 ARG BUILDKIT_VERSION=v0.11.6
+ARG K3S_VERSION=v1.21.2-k3s1
 
 # xx is a helper for cross-compilation
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
@@ -21,7 +22,7 @@ ENV CGO_ENABLED=0
 WORKDIR /src
 
 FROM registry:$REGISTRY_VERSION AS registry
-
+FROM rancher/k3s:${K3S_VERSION} AS k3s
 FROM moby/buildkit:$BUILDKIT_VERSION AS buildkit
 
 FROM gobase AS docker
@@ -103,9 +104,22 @@ RUN apk add --no-cache \
       shadow-uidmap \
       xfsprogs \
       xz
+# k3s deps
+RUN apk add --no-cache \
+      busybox-binsh \
+      cni-plugins \
+      cni-plugin-flannel \
+      conntrack-tools \
+      coreutils \
+      dbus \
+      findutils \
+      ipset
+ENV PATH="/usr/libexec/cni:${PATH}"
 COPY --link --from=gotestsum /out/gotestsum /usr/bin/
 COPY --link --from=registry /bin/registry /usr/bin/
 COPY --link --from=docker /opt/docker/* /usr/bin/
+COPY --link --from=k3s /bin/k3s /usr/bin/
+COPY --link --from=k3s /bin/kubectl /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildkitd /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildctl /usr/bin/
 COPY --link --from=binaries /buildx /usr/bin/
