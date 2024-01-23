@@ -139,6 +139,7 @@ COPY <<-"EOF" /entrypoint.sh
   fi
   exec "$@"
 EOF
+RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
 FROM integration-test-base AS integration-test
