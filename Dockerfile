@@ -7,7 +7,7 @@ ARG DOCKER_VERSION=24.0.6
 ARG GOTESTSUM_VERSION=v1.9.0
 ARG REGISTRY_VERSION=2.8.0
 ARG BUILDKIT_VERSION=v0.11.6
-ARG K3S_VERSION=v1.21.2-k3s1
+ARG K3S_VERSION=v1.27.9-k3s1
 
 # xx is a helper for cross-compilation
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
@@ -123,6 +123,23 @@ COPY --link --from=k3s /bin/kubectl /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildkitd /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildctl /usr/bin/
 COPY --link --from=binaries /buildx /usr/bin/
+COPY <<-"EOF" /entrypoint.sh
+  #!/bin/sh
+  set -e
+  # cgroup v2: enable nesting
+  # https://github.com/moby/moby/blob/v25.0.0/hack/dind#L59-L69
+  if [ -f /sys/fs/cgroup/cgroup.controllers ]; then
+    # move the processes from the root group to the /init group,
+    # otherwise writing subtree_control fails with EBUSY.
+    # An error during moving non-existent process (i.e., "cat") is ignored.
+    mkdir -p /sys/fs/cgroup/init
+    xargs -rn1 < /sys/fs/cgroup/cgroup.procs > /sys/fs/cgroup/init/cgroup.procs || :
+    # enable controllers
+    sed -e 's/ / +/g' -e 's/^/+/' < /sys/fs/cgroup/cgroup.controllers > /sys/fs/cgroup/cgroup.subtree_control
+  fi
+  exec "$@"
+EOF
+ENTRYPOINT ["/entrypoint.sh"]
 
 FROM integration-test-base AS integration-test
 COPY . .
