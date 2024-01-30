@@ -170,3 +170,9 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace (
+	// reverts https://github.com/moby/buildkit/pull/4094 to fix fsutil issues on Windows
+	github.com/moby/buildkit => github.com/crazy-max/buildkit v0.7.1-0.20240130133234-d9aa289bd124 // compose-957cb50df991
+	github.com/tonistiigi/fsutil => github.com/tonistiigi/fsutil v0.0.0-20230629203738-36ef4d8c0dbb
+)
