@@ -512,7 +512,7 @@ github.com/mitchellh/mapstructure
 # github.com/mitchellh/reflectwalk v1.0.2
 ## explicit
 github.com/mitchellh/reflectwalk
-# github.com/moby/buildkit v0.13.0
+# github.com/moby/buildkit v0.13.0 => github.com/crazy-max/buildkit v0.7.1-0.20240306154127-51a7fa279586
 ## explicit; go 1.21
 github.com/moby/buildkit/api/services/control
 github.com/moby/buildkit/api/types
@@ -1325,3 +1325,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
+# github.com/moby/buildkit => github.com/crazy-max/buildkit v0.7.1-0.20240306154127-51a7fa279586

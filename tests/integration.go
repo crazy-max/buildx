@@ -55,6 +55,9 @@ func buildxCmd(sb integration.Sandbox, opts ...cmdOpt) *exec.Cmd {
 	if context := sb.DockerAddress(); context != "" {
 		cmd.Env = append(cmd.Env, "DOCKER_CONTEXT="+context)
 	}
+	if env := sb.ExtraEnv(); len(env) > 0 {
+		cmd.Env = append(cmd.Env, env...)
+	}
 
 	return cmd
 }
@@ -67,6 +70,9 @@ func dockerCmd(sb integration.Sandbox, opts ...cmdOpt) *exec.Cmd {
 	}
 	if context := sb.DockerAddress(); context != "" {
 		cmd.Env = append(cmd.Env, "DOCKER_CONTEXT="+context)
+	}
+	if env := sb.ExtraEnv(); len(env) > 0 {
+		cmd.Env = append(cmd.Env, env...)
 	}
 	return cmd
 }

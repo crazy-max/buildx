@@ -11,6 +11,7 @@ type backend struct {
 	builder             string
 	context             string
 	unsupportedFeatures []string
+	extraEnv            []string
 }
 
 var _ integration.Backend = &backend{}
@@ -37,6 +38,10 @@ func (s *backend) Rootless() bool {
 
 func (s *backend) NetNSDetached() bool {
 	return false
+}
+
+func (s *backend) ExtraEnv() []string {
+	return s.extraEnv
 }
 
 func (s backend) Supports(feature string) bool {

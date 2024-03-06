@@ -6,6 +6,7 @@ import (
 	"os/exec"
 
 	"github.com/moby/buildkit/identity"
+	"github.com/moby/buildkit/util/testutil/dockerd"
 	"github.com/moby/buildkit/util/testutil/integration"
 	bkworkers "github.com/moby/buildkit/util/testutil/workers"
 	"github.com/pkg/errors"
@@ -43,6 +44,7 @@ func (c dockerWorker) New(ctx context.Context, cfg *integration.BackendConfig) (
 	moby := bkworkers.Moby{
 		ID:                    c.id,
 		ContainerdSnapshotter: c.containerdSnapshotter,
+		Binary:                dockerd.DefaultDockerdBinary,
 	}
 	bk, bkclose, err := moby.New(ctx, cfg)
 	if err != nil {

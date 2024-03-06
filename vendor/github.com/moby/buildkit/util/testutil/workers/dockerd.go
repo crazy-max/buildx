@@ -3,6 +3,7 @@ package workers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -20,47 +21,76 @@ import (
 
 // InitDockerdWorker registers a dockerd worker with the global registry.
 func InitDockerdWorker() {
-	integration.Register(&Moby{
-		ID:         "dockerd",
-		IsRootless: false,
-		Unsupported: []string{
-			FeatureCacheExport,
-			FeatureCacheImport,
-			FeatureCacheBackendAzblob,
-			FeatureCacheBackendGha,
-			FeatureCacheBackendLocal,
-			FeatureCacheBackendRegistry,
-			FeatureCacheBackendS3,
-			FeatureDirectPush,
-			FeatureImageExporter,
-			FeatureMultiCacheExport,
-			FeatureMultiPlatform,
-			FeatureOCIExporter,
-			FeatureOCILayout,
-			FeatureProvenance,
-			FeatureSBOM,
-			FeatureSecurityMode,
-			FeatureCNINetwork,
+	workers := []Moby{
+		{
+			ID:         "dockerd",
+			Binary:     dockerd.DefaultDockerdBinary,
+			IsRootless: false,
+			Unsupported: []string{
+				FeatureCacheExport,
+				FeatureCacheImport,
+				FeatureCacheBackendAzblob,
+				FeatureCacheBackendGha,
+				FeatureCacheBackendLocal,
+				FeatureCacheBackendRegistry,
+				FeatureCacheBackendS3,
+				FeatureDirectPush,
+				FeatureImageExporter,
+				FeatureMultiCacheExport,
+				FeatureMultiPlatform,
+				FeatureOCIExporter,
+				FeatureOCILayout,
+				FeatureProvenance,
+				FeatureSBOM,
+				FeatureSecurityMode,
+				FeatureCNINetwork,
+			},
 		},
-	})
-	integration.Register(&Moby{
-		ID:                    "dockerd-containerd",
-		IsRootless:            false,
-		ContainerdSnapshotter: true,
-		Unsupported: []string{
-			FeatureSecurityMode,
-			FeatureCNINetwork,
+		{
+			ID:                    "dockerd-containerd",
+			Binary:                dockerd.DefaultDockerdBinary,
+			IsRootless:            false,
+			ContainerdSnapshotter: true,
+			Unsupported: []string{
+				FeatureSecurityMode,
+				FeatureCNINetwork,
+			},
 		},
-	})
+	}
+
+	for _, w := range workers {
+		worker := w
+		integration.Register(&worker)
+		// e.g. `dockerd-26.0=/opt/dockerd-26.0/bin,dockerd-25.0=/opt/dockerd-25.0/bin`
+		if s := os.Getenv("BUILDKIT_INTEGRATION_DOCKERD_EXTRA"); s != "" {
+			entries := strings.Split(s, ",")
+			for _, entry := range entries {
+				p1 := strings.Split(strings.TrimSpace(entry), "=")
+				if len(p1) != 2 {
+					panic(errors.Errorf("unexpected BUILDKIT_INTEGRATION_DOCKERD_EXTRA: %q", s))
+				}
+				fullname, bin := p1[0], p1[1]
+				p2 := strings.Split(strings.TrimSpace(fullname), "-")
+				if len(p2) != 2 {
+					panic(errors.Errorf("unexpected BUILDKIT_INTEGRATION_DOCKERD_EXTRA: %q", s))
+				}
+				_, ver := p2[0], p2[1]
+				worker.ID = fmt.Sprintf("%s-%s", worker.ID, ver)
+				worker.Binary = filepath.Join(bin, "dockerd")
+				worker.ExtraEnv = []string{fmt.Sprintf("PATH=%s:%s", bin, os.Getenv("PATH"))}
+				integration.Register(&worker)
+			}
+		}
+	}
 }
 
 type Moby struct {
-	ID         string
-	IsRootless bool
-
+	ID                    string
+	Binary                string
+	IsRootless            bool
 	ContainerdSnapshotter bool
-
-	Unsupported []string
+	Unsupported           []string
+	ExtraEnv              []string // e.g. "PATH=/opt/dockerd-26.0/bin:/usr/bin:..."
 }
 
 func (c Moby) Name() string {
@@ -137,7 +167,13 @@ func (c Moby) New(ctx context.Context, cfg *integration.BackendConfig) (b integr
 		return nil, nil, err
 	}
 
-	d, err := dockerd.NewDaemon(workDir)
+	dockerdOpts := []dockerd.Option{
+		dockerd.WithExtraEnv(c.ExtraEnv),
+	}
+	if c.Binary != "" {
+		dockerdOpts = append(dockerdOpts, dockerd.WithBinary(c.Binary))
+	}
+	d, err := dockerd.NewDaemon(workDir, dockerdOpts...)
 	if err != nil {
 		return nil, nil, errors.Errorf("new daemon error: %q, %s", err, integration.FormatLogs(cfg.Logs))
 	}
@@ -164,7 +200,7 @@ func (c Moby) New(ctx context.Context, cfg *integration.BackendConfig) (b integr
 	deferF.Append(d.StopWithError)
 
 	if err := integration.WaitSocket(d.Sock(), 5*time.Second, nil); err != nil {
-		return nil, nil, errors.Errorf("dockerd did not start up: %q, %s", err, integration.FormatLogs(cfg.Logs))
+		return nil, nil, errors.Wrapf(err, "dockerd did not start up: %s", integration.FormatLogs(cfg.Logs))
 	}
 
 	dockerAPI, err := client.NewClientWithOpts(client.WithHost(d.Sock()))
@@ -229,6 +265,7 @@ func (c Moby) New(ctx context.Context, cfg *integration.BackendConfig) (b integr
 		dockerAddress:       d.Sock(),
 		rootless:            c.IsRootless,
 		netnsDetached:       false,
+		extraEnv:            c.ExtraEnv,
 		isDockerd:           true,
 		unsupportedFeatures: c.Unsupported,
 	}, cl, nil
