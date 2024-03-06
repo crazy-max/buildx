@@ -3,7 +3,8 @@
 ARG GO_VERSION=1.21
 ARG XX_VERSION=1.4.0
 
-ARG DOCKER_VERSION=25.0.2
+ARG DOCKER_VERSION=26.0.0-rc1
+ARG DOCKER_VERSION_ALT_25=25.0.3
 ARG GOTESTSUM_VERSION=v1.9.0
 ARG REGISTRY_VERSION=2.8.0
 ARG BUILDKIT_VERSION=v0.12.5
@@ -22,6 +23,8 @@ WORKDIR /src
 
 FROM moby/moby-bin:$DOCKER_VERSION AS docker-engine
 FROM dockereng/cli-bin:$DOCKER_VERSION AS docker-cli
+FROM moby/moby-bin:$DOCKER_VERSION_ALT_25 AS docker-engine-alt
+FROM dockereng/cli-bin:$DOCKER_VERSION_ALT_25 AS docker-cli-alt
 FROM registry:$REGISTRY_VERSION AS registry
 FROM moby/buildkit:$BUILDKIT_VERSION AS buildkit
 
@@ -92,9 +95,12 @@ COPY --link --from=gotestsum /out/gotestsum /usr/bin/
 COPY --link --from=registry /bin/registry /usr/bin/
 COPY --link --from=docker-engine / /usr/bin/
 COPY --link --from=docker-cli / /usr/bin/
+COPY --link --from=docker-engine-alt / /opt/docker-alt-25/
+COPY --link --from=docker-cli-alt / /opt/docker-alt-25/
 COPY --link --from=buildkit /usr/bin/buildkitd /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildctl /usr/bin/
 COPY --link --from=binaries /buildx /usr/bin/
+ENV TEST_DOCKER_EXTRA="docker@25.0=/opt/docker-alt-25"
 
 FROM integration-test-base AS integration-test
 COPY . .
