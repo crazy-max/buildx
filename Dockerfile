@@ -20,25 +20,10 @@ ENV GOFLAGS=-mod=vendor
 ENV CGO_ENABLED=0
 WORKDIR /src
 
+FROM moby/moby-bin:$DOCKER_VERSION AS docker-engine
+FROM dockereng/cli-bin:$DOCKER_VERSION AS docker-cli
 FROM registry:$REGISTRY_VERSION AS registry
-
 FROM moby/buildkit:$BUILDKIT_VERSION AS buildkit
-
-FROM gobase AS docker
-ARG TARGETPLATFORM
-ARG DOCKER_VERSION
-WORKDIR /opt/docker
-RUN DOCKER_ARCH=$(case ${TARGETPLATFORM:-linux/amd64} in \
-    "linux/amd64")   echo "x86_64"  ;; \
-    "linux/arm/v6")  echo "armel"   ;; \
-    "linux/arm/v7")  echo "armhf"   ;; \
-    "linux/arm64")   echo "aarch64" ;; \
-    "linux/ppc64le") echo "ppc64le" ;; \
-    "linux/s390x")   echo "s390x"   ;; \
-    *)               echo ""        ;; esac) \
-  && echo "DOCKER_ARCH=$DOCKER_ARCH" \
-  && wget -qO- "https://download.docker.com/linux/static/stable/${DOCKER_ARCH}/docker-${DOCKER_VERSION}.tgz" | tar xvz --strip 1
-RUN ./dockerd --version && ./containerd --version && ./ctr --version && ./runc --version
 
 FROM gobase AS gotestsum
 ARG GOTESTSUM_VERSION
@@ -105,7 +90,8 @@ RUN apk add --no-cache \
       xz
 COPY --link --from=gotestsum /out/gotestsum /usr/bin/
 COPY --link --from=registry /bin/registry /usr/bin/
-COPY --link --from=docker /opt/docker/* /usr/bin/
+COPY --link --from=docker-engine / /usr/bin/
+COPY --link --from=docker-cli / /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildkitd /usr/bin/
 COPY --link --from=buildkit /usr/bin/buildctl /usr/bin/
 COPY --link --from=binaries /buildx /usr/bin/
