@@ -21,7 +21,7 @@ var rmTests = []func(t *testing.T, sb integration.Sandbox){
 }
 
 func testRm(t *testing.T, sb integration.Sandbox) {
-	if sb.Name() != "docker-container" {
+	if !isDockerContainerWorker(sb) {
 		t.Skip("only testing for docker-container driver")
 	}
 
@@ -40,7 +40,7 @@ func testRm(t *testing.T, sb integration.Sandbox) {
 }
 
 func testRmMulti(t *testing.T, sb integration.Sandbox) {
-	if sb.Name() != "docker-container" {
+	if !isDockerContainerWorker(sb) {
 		t.Skip("only testing for docker-container driver")
 	}
 

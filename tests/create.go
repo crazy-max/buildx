@@ -21,7 +21,7 @@ var createTests = []func(t *testing.T, sb integration.Sandbox){
 }
 
 func testCreateMemoryLimit(t *testing.T, sb integration.Sandbox) {
-	if sb.Name() != "docker-container" {
+	if !isDockerContainerWorker(sb) {
 		t.Skip("only testing for docker-container driver")
 	}
 
@@ -40,7 +40,7 @@ func testCreateMemoryLimit(t *testing.T, sb integration.Sandbox) {
 }
 
 func testCreateRestartAlways(t *testing.T, sb integration.Sandbox) {
-	if sb.Name() != "docker-container" {
+	if !isDockerContainerWorker(sb) {
 		t.Skip("only testing for docker-container driver")
 	}
 

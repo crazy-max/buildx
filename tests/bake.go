@@ -641,7 +641,7 @@ target "default" {
 }
 
 func testBakeMultiExporters(t *testing.T, sb integration.Sandbox) {
-	if sb.Name() != "docker" {
+	if !isMobyWorker(sb) {
 		t.Skip("skipping test for non-docker workers")
 	}
 
@@ -722,7 +722,7 @@ target "default" {
 }
 
 func testBakeLoadPush(t *testing.T, sb integration.Sandbox) {
-	if sb.Name() != "docker" {
+	if !isMobyWorker(sb) {
 		t.Skip("skipping test for non-docker workers")
 	}
 
