@@ -59,6 +59,7 @@ var buildTests = []func(t *testing.T, sb integration.Sandbox){
 	testBuildMultiExporters,
 	testBuildLoadPush,
 	testBuildSecret,
+	testBuildDefaultLoad,
 }
 
 func testBuild(t *testing.T, sb integration.Sandbox) {
@@ -748,6 +749,57 @@ COPY --from=build /token /
 		require.NoError(t, err)
 		require.Equal(t, token, string(dt))
 	})
+}
+
+func testBuildDefaultLoad(t *testing.T, sb integration.Sandbox) {
+	if sb.Name() != "docker" {
+		t.Skip("skipping test for non-docker workers")
+	}
+
+	registry, err := sb.NewRegistry()
+	if errors.Is(err, integration.ErrRequirements) {
+		t.Skip(err.Error())
+	}
+	require.NoError(t, err)
+
+	target := registry + "/buildx/registry:" + identity.NewID()
+
+	var builderName string
+	t.Cleanup(func() {
+		if builderName == "" {
+			return
+		}
+
+		cmd := dockerCmd(sb, withArgs("image", "rm", target))
+		cmd.Stderr = os.Stderr
+		require.NoError(t, cmd.Run())
+
+		out, err := rmCmd(sb, withArgs(builderName))
+		require.NoError(t, err, out)
+	})
+
+	out, err := createCmd(sb, withArgs(
+		"--driver", "docker-container",
+		"--driver-opt", "default-load=true",
+	))
+	require.NoError(t, err, out)
+	builderName = strings.TrimSpace(out)
+
+	dir := createTestProject(t)
+
+	cmd := buildxCmd(sb, withArgs(
+		"build",
+		fmt.Sprintf("-t=%s", target),
+		dir,
+	))
+	cmd.Env = append(cmd.Env, "BUILDX_BUILDER="+builderName)
+	outb, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(outb))
+
+	// test docker store
+	cmd = dockerCmd(sb, withArgs("image", "inspect", target))
+	cmd.Stderr = os.Stderr
+	require.NoError(t, cmd.Run())
 }
 
 func createTestProject(t *testing.T) string {
