@@ -752,8 +752,8 @@ COPY --from=build /token /
 }
 
 func testBuildDefaultLoad(t *testing.T, sb integration.Sandbox) {
-	if sb.Name() != "docker" {
-		t.Skip("skipping test for non-docker workers")
+	if !isDockerWorker(sb) {
+		t.Skip("only testing with docker workers")
 	}
 
 	tag := "buildx/build:" + identity.NewID()
