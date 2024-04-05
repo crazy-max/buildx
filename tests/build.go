@@ -756,13 +756,7 @@ func testBuildDefaultLoad(t *testing.T, sb integration.Sandbox) {
 		t.Skip("skipping test for non-docker workers")
 	}
 
-	registry, err := sb.NewRegistry()
-	if errors.Is(err, integration.ErrRequirements) {
-		t.Skip(err.Error())
-	}
-	require.NoError(t, err)
-
-	target := registry + "/buildx/registry:" + identity.NewID()
+	tag := "buildx/build:" + identity.NewID()
 
 	var builderName string
 	t.Cleanup(func() {
@@ -770,7 +764,7 @@ func testBuildDefaultLoad(t *testing.T, sb integration.Sandbox) {
 			return
 		}
 
-		cmd := dockerCmd(sb, withArgs("image", "rm", target))
+		cmd := dockerCmd(sb, withArgs("image", "rm", tag))
 		cmd.Stderr = os.Stderr
 		require.NoError(t, cmd.Run())
 
@@ -789,15 +783,14 @@ func testBuildDefaultLoad(t *testing.T, sb integration.Sandbox) {
 
 	cmd := buildxCmd(sb, withArgs(
 		"build",
-		fmt.Sprintf("-t=%s", target),
+		fmt.Sprintf("-t=%s", tag),
 		dir,
 	))
 	cmd.Env = append(cmd.Env, "BUILDX_BUILDER="+builderName)
 	outb, err := cmd.CombinedOutput()
 	require.NoError(t, err, string(outb))
 
-	// test docker store
-	cmd = dockerCmd(sb, withArgs("image", "inspect", target))
+	cmd = dockerCmd(sb, withArgs("image", "inspect", tag))
 	cmd.Stderr = os.Stderr
 	require.NoError(t, cmd.Run())
 }
