@@ -2,11 +2,14 @@ package commands
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/containerd/console"
 	"github.com/containerd/containerd/platforms"
@@ -26,6 +29,7 @@ import (
 	"github.com/moby/buildkit/util/progress/progressui"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type bakeOptions struct {
@@ -42,6 +46,8 @@ type bakeOptions struct {
 }
 
 func runBake(ctx context.Context, dockerCli command.Cli, targets []string, in bakeOptions, cFlags commonFlags) (err error) {
+	mp := dockerCli.MeterProvider()
+
 	ctx, end, err := tracing.TraceCurrentCommand(ctx, "bake")
 	if err != nil {
 		return err
@@ -96,6 +102,7 @@ func runBake(ctx context.Context, dockerCli command.Cli, targets []string, in ba
 
 	var nodes []builder.Node
 	var progressConsoleDesc, progressTextDesc string
+	var attributes attribute.Set
 
 	// instance only needed for reading remote bake files or building
 	if url != "" || !in.printOnly {
@@ -115,6 +122,7 @@ func runBake(ctx context.Context, dockerCli command.Cli, targets []string, in ba
 		}
 		progressConsoleDesc = fmt.Sprintf("%s:%s", b.Driver, b.Name)
 		progressTextDesc = fmt.Sprintf("building with %q instance using %s driver", b.Name, b.Driver)
+		attributes = bakeMetricAttributes(dockerCli, b, &in, targets)
 	}
 
 	var term bool
@@ -125,6 +133,7 @@ func runBake(ctx context.Context, dockerCli command.Cli, targets []string, in ba
 	progressMode := progressui.DisplayMode(cFlags.progress)
 	printer, err := progress.NewPrinter(ctx2, os.Stderr, progressMode,
 		progress.WithDesc(progressTextDesc, progressConsoleDesc),
+		progress.WithMetrics(mp, attributes),
 	)
 	if err != nil {
 		return err
@@ -330,4 +339,41 @@ func readBakeFiles(ctx context.Context, nodes []builder.Node, url string, names 
 	}
 
 	return
+}
+
+func bakeMetricAttributes(dockerCli command.Cli, b *builder.Builder, options *bakeOptions, targets []string) attribute.Set {
+	return attribute.NewSet(
+		attribute.String("command.name", "bake"),
+		attribute.Stringer("command.options.hash", &bakeOptionsHash{
+			bakeOptions: options,
+			targets:     targets,
+			configDir:   confutil.ConfigDir(dockerCli),
+		}),
+		attribute.String("driver.name", options.builder),
+		attribute.String("driver.type", b.Driver),
+	)
+}
+
+// buildOptionsHash computes a hash for the buildOptions when the String method is invoked.
+// This is done so we can delay the computation of the hash until needed by OTEL using
+// the fmt.Stringer interface.
+type bakeOptionsHash struct {
+	*bakeOptions
+	targets    []string
+	configDir  string
+	result     string
+	resultOnce sync.Once
+}
+
+func (o *bakeOptionsHash) String() string {
+	o.resultOnce.Do(func() {
+		salt := confutil.TryNodeIdentifier(o.configDir)
+		h := sha256.New()
+		for _, s := range append(o.targets, salt) {
+			_, _ = io.WriteString(h, s)
+			h.Write([]byte{0})
+		}
+		o.result = hex.EncodeToString(h.Sum(nil))
+	})
+	return o.result
 }
