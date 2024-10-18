@@ -8,6 +8,7 @@ import (
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -74,6 +75,7 @@ func (c *Config) MkdirAll(dir string, perm os.FileMode) error {
 		// apply chown to each directory level
 		parts := filepath.SplitList(dir)
 		for i := range parts {
+			logrus.Infof("chown %s", filepath.Join(c.dir, filepath.Join(parts[:i+1]...)))
 			if err := os.Chown(filepath.Join(c.dir, filepath.Join(parts[:i+1]...)), sudoerUID, sudoerGID); err != nil {
 				return err
 			}
