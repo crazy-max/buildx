@@ -3,6 +3,7 @@ package confutil
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/docker/pkg/ioutils"
@@ -73,7 +74,7 @@ func (c *Config) MkdirAll(dir string, perm os.FileMode) error {
 	}
 	if sudoerUID != -1 && sudoerGID != -1 {
 		// apply chown to each directory level
-		parts := filepath.SplitList(dir)
+		parts := strings.Split(dir, string(filepath.Separator))
 		for i := range parts {
 			logrus.Infof("chown %s", filepath.Join(c.dir, filepath.Join(parts[:i+1]...)))
 			if err := os.Chown(filepath.Join(c.dir, filepath.Join(parts[:i+1]...)), sudoerUID, sudoerGID); err != nil {
