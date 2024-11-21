@@ -443,14 +443,17 @@ func removeCommonPaths(in, common []string) []string {
 func evaluatePaths(in []string) ([]string, error) {
 	out := make([]string, 0, len(in))
 	for _, p := range in {
+		fmt.Printf("p: %s\n", p)
 		v, err := filepath.Abs(p)
 		if err != nil {
 			return nil, err
 		}
+		fmt.Printf("vAbs: %s\n", v)
 		v, err = filepath.EvalSymlinks(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to evaluate path %q", p)
 		}
+		fmt.Printf("vEvalSymlinks: %s\n", v)
 		out = append(out, v)
 	}
 	return out, nil

@@ -16,8 +16,10 @@ import (
 )
 
 func TestEvaluateToExistingPath(t *testing.T) {
-	tempDir, err := filepath.Abs(t.TempDir())
-	require.NoError(t, err)
+	//tempDir, err := filepath.Abs(t.TempDir())
+	//require.NoError(t, err)
+
+	tempDir := t.TempDir()
 
 	// Setup temporary directory structure for testing
 	existingFile := filepath.Join(tempDir, "existing_file")
@@ -104,8 +106,8 @@ func TestEvaluateToExistingPath(t *testing.T) {
 func TestDedupePaths(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
-	wd, err = filepath.Abs(wd)
-	require.NoError(t, err)
+	//wd, err = filepath.Abs(wd)
+	//require.NoError(t, err)
 	tcases := []struct {
 		in  map[string]struct{}
 		out map[string]struct{}
@@ -177,10 +179,13 @@ func TestDedupePaths(t *testing.T) {
 }
 
 func TestValidateEntitlements(t *testing.T) {
-	dir1, err := filepath.Abs(t.TempDir())
-	require.NoError(t, err)
-	dir2, err := filepath.Abs(t.TempDir())
-	require.NoError(t, err)
+	//dir1, err := filepath.Abs(t.TempDir())
+	//require.NoError(t, err)
+	//dir2, err := filepath.Abs(t.TempDir())
+	//require.NoError(t, err)
+
+	dir1 := t.TempDir()
+	dir2 := t.TempDir()
 
 	escapeLink := filepath.Join(dir1, "escape_link")
 	require.NoError(t, os.Symlink("../../aa", escapeLink))
