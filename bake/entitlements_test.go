@@ -9,7 +9,6 @@ import (
 
 	"github.com/docker/buildx/build"
 	"github.com/docker/buildx/controller/pb"
-	"github.com/docker/buildx/util/osutil"
 	"github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/util/entitlements"
@@ -17,7 +16,7 @@ import (
 )
 
 func TestEvaluateToExistingPath(t *testing.T) {
-	tempDir, err := osutil.GetLongPathName(t.TempDir())
+	tempDir, err := filepath.Abs(t.TempDir())
 	require.NoError(t, err)
 
 	// Setup temporary directory structure for testing
@@ -103,7 +102,10 @@ func TestEvaluateToExistingPath(t *testing.T) {
 }
 
 func TestDedupePaths(t *testing.T) {
-	wd := osutil.GetWd()
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	wd, err = filepath.Abs(wd)
+	require.NoError(t, err)
 	tcases := []struct {
 		in  map[string]struct{}
 		out map[string]struct{}
@@ -175,15 +177,18 @@ func TestDedupePaths(t *testing.T) {
 }
 
 func TestValidateEntitlements(t *testing.T) {
-	dir1, err := osutil.GetLongPathName(t.TempDir())
+	dir1, err := filepath.Abs(t.TempDir())
 	require.NoError(t, err)
-	dir2, err := osutil.GetLongPathName(t.TempDir())
+	dir2, err := filepath.Abs(t.TempDir())
 	require.NoError(t, err)
 
 	escapeLink := filepath.Join(dir1, "escape_link")
 	require.NoError(t, os.Symlink("../../aa", escapeLink))
 
-	wd := osutil.GetWd()
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	wd, err = filepath.Abs(wd)
+	require.NoError(t, err)
 
 	tcases := []struct {
 		name     string
