@@ -281,7 +281,7 @@ func runBake(ctx context.Context, dockerCli command.Cli, targets []string, in ba
 		}
 	}
 
-	if err := saveLocalStateGroup(dockerCli, in, targets, bo, overrides, def); err != nil {
+	if err := saveLocalStateGroup(dockerCli, in, targets, bo); err != nil {
 		return err
 	}
 
@@ -486,7 +486,14 @@ func bakeCmd(dockerCli command.Cli, rootOpts *rootOptions) *cobra.Command {
 	return cmd
 }
 
-func saveLocalStateGroup(dockerCli command.Cli, in bakeOptions, targets []string, bo map[string]build.Options, overrides []string, def any) error {
+func saveLocalStateGroup(dockerCli command.Cli, in bakeOptions, targets []string, bo map[string]build.Options) error {
+	l, err := localstate.New(confutil.NewConfig(dockerCli))
+	if err != nil {
+		return err
+	}
+
+	defer l.Migrate()
+
 	prm := confutil.MetadataProvenance()
 	if len(in.metadataFile) == 0 {
 		prm = confutil.MetadataProvenanceModeDisabled
@@ -506,19 +513,10 @@ func saveLocalStateGroup(dockerCli command.Cli, in bakeOptions, targets []string
 	if len(refs) == 0 {
 		return nil
 	}
-	l, err := localstate.New(confutil.NewConfig(dockerCli))
-	if err != nil {
-		return err
-	}
-	dtdef, err := json.MarshalIndent(def, "", "  ")
-	if err != nil {
-		return err
-	}
+
 	return l.SaveGroup(groupRef, localstate.StateGroup{
-		Definition: dtdef,
-		Targets:    targets,
-		Inputs:     overrides,
-		Refs:       refs,
+		Refs:    refs,
+		Targets: targets,
 	})
 }
 
