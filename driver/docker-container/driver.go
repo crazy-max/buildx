@@ -134,6 +134,27 @@ func (d *Driver) create(ctx context.Context, l progress.SubLogger) error {
 			},
 			Init: &useInit,
 		}
+
+		mounts := []mount.Mount{
+			{
+				Type:   mount.TypeVolume,
+				Source: d.Name + volumeStateSuffix,
+				Target: confutil.DefaultBuildKitStateDir,
+			},
+		}
+		if os.Getenv("WSL_DISTRO_NAME") != "" {
+			wslLibPath := "/usr/lib/wsl"
+			if st, err := os.Stat(wslLibPath); err == nil && st.IsDir() {
+				mounts = append(mounts, mount.Mount{
+					Type:     mount.TypeBind,
+					Source:   wslLibPath,
+					Target:   wslLibPath,
+					ReadOnly: true,
+				})
+			}
+		}
+		hc.Mounts = mounts
+
 		if d.netMode != "" {
 			hc.NetworkMode = container.NetworkMode(d.netMode)
 		}
