@@ -99,6 +99,16 @@ func (f *factory) New(ctx context.Context, cfg driver.InitConfig) (driver.Driver
 			if err != nil {
 				return nil, err
 			}
+		case k == "gpu":
+			var gpus dockeropts.GpuOpts
+			if err := gpus.Set(v); err != nil {
+				return nil, err
+			}
+			if vv := gpus.Value(); len(vv) > 0 {
+				d.gpus = vv
+			} else {
+				return nil, errors.Errorf("invalid gpu option %q", v)
+			}
 		case strings.HasPrefix(k, "env."):
 			envName := strings.TrimPrefix(k, "env.")
 			if envName == "" {

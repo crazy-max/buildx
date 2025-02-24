@@ -56,6 +56,7 @@ type Driver struct {
 	restartPolicy container.RestartPolicy
 	env           []string
 	defaultLoad   bool
+	gpus          []container.DeviceRequest
 }
 
 func (d *Driver) IsMobyDriver() bool {
@@ -157,6 +158,9 @@ func (d *Driver) create(ctx context.Context, l progress.SubLogger) error {
 		}
 		if d.cpusetMems != "" {
 			hc.Resources.CpusetMems = d.cpusetMems
+		}
+		if len(d.gpus) > 0 {
+			hc.Resources.DeviceRequests = d.gpus
 		}
 		if info, err := d.DockerAPI.Info(ctx); err == nil {
 			if info.CgroupDriver == "cgroupfs" {
