@@ -56,6 +56,7 @@ type Driver struct {
 	restartPolicy container.RestartPolicy
 	env           []string
 	defaultLoad   bool
+	gpus          []container.DeviceRequest
 }
 
 func (d *Driver) IsMobyDriver() bool {
@@ -158,6 +159,9 @@ func (d *Driver) create(ctx context.Context, l progress.SubLogger) error {
 		if d.cpusetMems != "" {
 			hc.Resources.CpusetMems = d.cpusetMems
 		}
+		if len(d.gpus) > 0 {
+			hc.Resources.DeviceRequests = d.gpus
+		}
 		if info, err := d.DockerAPI.Info(ctx); err == nil {
 			if info.CgroupDriver == "cgroupfs" {
 				// Place all buildkit containers inside this cgroup by default so limits can be attached
@@ -181,7 +185,18 @@ func (d *Driver) create(ctx context.Context, l progress.SubLogger) error {
 		}
 		_, err := d.DockerAPI.ContainerCreate(ctx, cfg, hc, &network.NetworkingConfig{}, nil, d.Name)
 		if err != nil && !errdefs.IsConflict(err) {
-			return err
+			if len(hc.DeviceRequests) > 0 && strings.Contains(err.Error(), "could not select device driver") {
+				// Daemon returns "docker: Error response from daemon: could not select device driver "" with capabilities: [[gpu]]."
+				// if a GPU is requested but is not configured to support GPUs.
+				// In this case, create the container without GPU support.
+				// https://github.com/moby/moby/blob/320db9d55d6769eaf8f83320ce27ca548ef9abfd/daemon/errors.go#L87
+				hc.DeviceRequests = nil
+				if _, err := d.DockerAPI.ContainerCreate(ctx, cfg, hc, &network.NetworkingConfig{}, nil, d.Name); err != nil && !errdefs.IsConflict(err) {
+					return err
+				}
+			} else {
+				return err
+			}
 		}
 		if err == nil {
 			if err := d.copyToContainer(ctx, d.InitConfig.Files); err != nil {
