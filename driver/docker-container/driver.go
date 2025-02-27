@@ -30,6 +30,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/moby/buildkit/client"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -185,6 +186,8 @@ func (d *Driver) create(ctx context.Context, l progress.SubLogger) error {
 		}
 		_, err := d.DockerAPI.ContainerCreate(ctx, cfg, hc, &network.NetworkingConfig{}, nil, d.Name)
 		if err != nil && !errdefs.IsConflict(err) {
+			logrus.Infof("failed to create container %s: %v", d.Name, err)
+			logrus.Infof("failed to create container err.Error(): %q", err.Error())
 			if len(hc.DeviceRequests) > 0 && strings.Contains(err.Error(), "could not select device driver") {
 				// Daemon returns "docker: Error response from daemon: could not select device driver "" with capabilities: [[gpu]]."
 				// if a GPU is requested but is not configured to support GPUs.
