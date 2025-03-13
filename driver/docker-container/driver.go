@@ -30,6 +30,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/moby/buildkit/client"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -437,6 +438,10 @@ func (d *Driver) HostGatewayIP(ctx context.Context) (net.IP, error) {
 // a dummy container with GPU device to check if the daemon has this capability
 // because there is no API to check it yet.
 func (d *Driver) hasGPUCapability(ctx context.Context, image string, gpus []container.DeviceRequest) bool {
+	start := time.Now()
+	defer func() {
+		logrus.Infof("Checking GPU capability took %v", time.Since(start))
+	}()
 	cfg := &container.Config{
 		Image:      image,
 		Entrypoint: []string{"/bin/true"},
