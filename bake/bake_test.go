@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/docker/buildx/build"
 	"github.com/docker/buildx/util/buildflags"
 	"github.com/moby/buildkit/util/entitlements"
 	"github.com/stretchr/testify/assert"
@@ -2413,6 +2414,31 @@ target "mtx" {
 			}
 		})
 	}
+}
+
+func TestRemoteContextURL(t *testing.T) {
+	t.Run("context path has priority when remote", func(t *testing.T) {
+		url := remoteContextURL(build.Inputs{
+			ContextPath: "https://context.example.com/org/repo.git",
+		}, &Input{URL: "https://definition.example.com/org/repo.git"})
+		require.Equal(t, "https://context.example.com/org/repo.git", url)
+	})
+	t.Run("uses input url when context path is not remote", func(t *testing.T) {
+		url := remoteContextURL(build.Inputs{
+			ContextPath: ".",
+		}, &Input{URL: "https://definition.example.com/org/repo.git"})
+		require.Equal(t, "https://definition.example.com/org/repo.git", url)
+	})
+	t.Run("returns empty when context path is cwd prefixed", func(t *testing.T) {
+		url := remoteContextURL(build.Inputs{
+			ContextPath: "cwd://.",
+		}, &Input{URL: "https://definition.example.com/org/repo.git"})
+		require.Empty(t, url)
+	})
+	t.Run("returns empty without remote url", func(t *testing.T) {
+		require.Empty(t, remoteContextURL(build.Inputs{}, nil))
+		require.Empty(t, remoteContextURL(build.Inputs{}, &Input{URL: "local-path"}))
+	})
 }
 
 func stringify[V fmt.Stringer](values []V) []string {
