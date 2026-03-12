@@ -12,10 +12,13 @@ import (
 
 	"github.com/containerd/continuity/fs/fstest"
 	"github.com/docker/buildx/driver"
+	"github.com/docker/buildx/util/desktop/bundle"
 	"github.com/docker/buildx/util/gitutil"
 	"github.com/docker/buildx/util/gitutil/gittestutil"
 	"github.com/moby/buildkit/identity"
+	"github.com/moby/buildkit/util/testutil"
 	"github.com/moby/buildkit/util/testutil/integration"
+	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/stretchr/testify/require"
 )
 
@@ -40,6 +43,7 @@ func testHistoryExport(t *testing.T, sb integration.Sandbox) {
 	out, err := cmd.Output()
 	require.NoError(t, err, string(out))
 	require.FileExists(t, outFile)
+	requireDockerbuildRefs(t, outFile, ref.Ref)
 }
 
 func testHistoryExportFinalize(t *testing.T, sb integration.Sandbox) {
@@ -51,6 +55,7 @@ func testHistoryExportFinalize(t *testing.T, sb integration.Sandbox) {
 	out, err := cmd.Output()
 	require.NoError(t, err, string(out))
 	require.FileExists(t, outFile)
+	requireDockerbuildRefs(t, outFile, ref.Ref)
 }
 
 func testHistoryExportFinalizeMultiNodeRef(t *testing.T, sb integration.Sandbox) {
@@ -64,6 +69,7 @@ func testHistoryExportFinalizeMultiNodeRef(t *testing.T, sb integration.Sandbox)
 	out, err := cmd.Output()
 	require.NoError(t, err, string(out))
 	require.FileExists(t, outFile)
+	requireDockerbuildRefs(t, outFile, ref.Ref)
 }
 
 func testHistoryExportFinalizeAllMultiNode(t *testing.T, sb integration.Sandbox) {
@@ -77,6 +83,7 @@ func testHistoryExportFinalizeAllMultiNode(t *testing.T, sb integration.Sandbox)
 	out, err := cmd.Output()
 	require.NoError(t, err, string(out))
 	require.FileExists(t, outFile)
+	requireDockerbuildRefs(t, outFile, ref.Ref)
 }
 
 func testHistoryInspect(t *testing.T, sb integration.Sandbox) {
@@ -467,4 +474,65 @@ func requireHistoryRef(t *testing.T, sb integration.Sandbox, builderName, ref st
 		}
 	}
 	require.GreaterOrEqual(t, matches, 1)
+}
+
+func requireDockerbuildRefs(t *testing.T, filename string, expectedRefs ...string) {
+	dt, err := os.ReadFile(filename)
+	require.NoError(t, err)
+
+	m, err := testutil.ReadTarToMap(dt, true)
+	require.NoError(t, err)
+	require.Contains(t, m, "oci-layout")
+	require.Contains(t, m, "index.json")
+
+	var idx ocispecs.Index
+	err = json.Unmarshal(m["index.json"].Data, &idx)
+	require.NoError(t, err)
+	require.NotEmpty(t, idx.Manifests)
+
+	refs := make(map[string]int)
+	for _, desc := range idx.Manifests {
+		collectDockerbuildRefs(t, m, desc, refs)
+	}
+	for _, ref := range expectedRefs {
+		require.Contains(t, refs, ref)
+		require.GreaterOrEqual(t, refs[ref], 1)
+	}
+}
+
+func collectDockerbuildRefs(t *testing.T, m map[string]*testutil.TarItem, desc ocispecs.Descriptor, refs map[string]int) {
+	dt := dockerbuildBlob(t, m, desc)
+	switch desc.MediaType {
+	case ocispecs.MediaTypeImageIndex:
+		var idx ocispecs.Index
+		err := json.Unmarshal(dt, &idx)
+		require.NoError(t, err)
+		for _, child := range idx.Manifests {
+			collectDockerbuildRefs(t, m, child, refs)
+		}
+	case ocispecs.MediaTypeImageManifest:
+		var mfst ocispecs.Manifest
+		err := json.Unmarshal(dt, &mfst)
+		require.NoError(t, err)
+		require.Equal(t, bundle.HistoryRecordMediaTypeV0, mfst.Config.MediaType)
+
+		cfg := dockerbuildBlob(t, m, mfst.Config)
+		var rec struct {
+			Ref string `json:"Ref"`
+		}
+		err = json.Unmarshal(cfg, &rec)
+		require.NoError(t, err)
+		require.NotEmpty(t, rec.Ref)
+		refs[rec.Ref]++
+	default:
+		require.Failf(t, "unexpected media type", "unexpected dockerbuild descriptor media type %q", desc.MediaType)
+	}
+}
+
+func dockerbuildBlob(t *testing.T, m map[string]*testutil.TarItem, desc ocispecs.Descriptor) []byte {
+	require.Equal(t, "sha256", desc.Digest.Algorithm().String())
+	p := path.Join(ocispecs.ImageBlobsDir, desc.Digest.Algorithm().String(), desc.Digest.Encoded())
+	item, ok := m[p]
+	require.Truef(t, ok, "missing blob %s", p)
+	return item.Data
 }
