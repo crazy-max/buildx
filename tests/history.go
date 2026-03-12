@@ -2,6 +2,7 @@ package tests
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -10,8 +11,10 @@ import (
 	"time"
 
 	"github.com/containerd/continuity/fs/fstest"
+	"github.com/docker/buildx/driver"
 	"github.com/docker/buildx/util/gitutil"
 	"github.com/docker/buildx/util/gitutil/gittestutil"
+	"github.com/moby/buildkit/identity"
 	"github.com/moby/buildkit/util/testutil/integration"
 	"github.com/stretchr/testify/require"
 )
@@ -19,6 +22,8 @@ import (
 var historyTests = []func(t *testing.T, sb integration.Sandbox){
 	testHistoryExport,
 	testHistoryExportFinalize,
+	testHistoryExportFinalizeMultiNodeRef,
+	testHistoryExportFinalizeAllMultiNode,
 	testHistoryInspect,
 	testHistoryLs,
 	testHistoryRm,
@@ -43,6 +48,32 @@ func testHistoryExportFinalize(t *testing.T, sb integration.Sandbox) {
 
 	outFile := path.Join(t.TempDir(), "export.dockerbuild")
 	cmd := buildxCmd(sb, withArgs("history", "export", ref.Ref, "--finalize", "--output", outFile))
+	out, err := cmd.Output()
+	require.NoError(t, err, string(out))
+	require.FileExists(t, outFile)
+}
+
+func testHistoryExportFinalizeMultiNodeRef(t *testing.T, sb integration.Sandbox) {
+	builderName := createMultiNodeHistoryBuilder(t, sb)
+	ref := buildMultiNodeHistoryProject(t, sb, builderName)
+	require.NotEmpty(t, ref.Ref)
+	requireHistoryRef(t, sb, builderName, ref.Ref)
+
+	outFile := path.Join(t.TempDir(), "export.dockerbuild")
+	cmd := buildxCmd(sb, withArgs("history", "export", "--builder="+builderName, ref.Ref, "--finalize", "--output", outFile))
+	out, err := cmd.Output()
+	require.NoError(t, err, string(out))
+	require.FileExists(t, outFile)
+}
+
+func testHistoryExportFinalizeAllMultiNode(t *testing.T, sb integration.Sandbox) {
+	builderName := createMultiNodeHistoryBuilder(t, sb)
+	ref := buildMultiNodeHistoryProject(t, sb, builderName)
+	require.NotEmpty(t, ref.Ref)
+	requireHistoryRef(t, sb, builderName, ref.Ref)
+
+	outFile := path.Join(t.TempDir(), "export.dockerbuild")
+	cmd := buildxCmd(sb, withArgs("history", "export", "--builder="+builderName, "--finalize", "--all", "--output", outFile))
 	out, err := cmd.Output()
 	require.NoError(t, err, string(out))
 	require.FileExists(t, outFile)
@@ -341,4 +372,99 @@ func buildTestProject(t *testing.T, sb integration.Sandbox) buildRef {
 		Node:    refParts[1],
 		Ref:     refParts[2],
 	}
+}
+
+func buildMultiNodeHistoryProject(t *testing.T, sb integration.Sandbox, builderName string) buildRef {
+	dir := createTestProject(t)
+	cmd := buildxCmd(sb, withArgs(
+		"build",
+		"--progress=quiet",
+		"--builder="+builderName,
+		"--platform=linux/amd64,linux/arm64",
+		"--output=type=cacheonly",
+		"--metadata-file", filepath.Join(dir, "md.json"),
+		dir,
+	))
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(out))
+
+	dt, err := os.ReadFile(filepath.Join(dir, "md.json"))
+	require.NoError(t, err)
+
+	type mdT struct {
+		BuildRef string `json:"buildx.build.ref"`
+	}
+	var md mdT
+	err = json.Unmarshal(dt, &md)
+	require.NoError(t, err)
+
+	refParts := strings.Split(md.BuildRef, "/")
+	require.Len(t, refParts, 3)
+
+	return buildRef{
+		Builder: refParts[0],
+		Node:    refParts[1],
+		Ref:     refParts[2],
+	}
+}
+
+func createMultiNodeHistoryBuilder(t *testing.T, sb integration.Sandbox) string {
+	if !isDockerWorker(sb) {
+		t.Skip("only testing with docker workers")
+	}
+
+	ctnBuilder0 := "ctn-builder-" + identity.NewID()
+	ctnBuilder1 := "ctn-builder-" + identity.NewID()
+	remoteBuilder := "remote-builder-" + identity.NewID()
+	var hasCtnBuilder0, hasCtnBuilder1, hasRemoteBuilder bool
+
+	t.Cleanup(func() {
+		if hasRemoteBuilder {
+			_, _ = rmCmd(sb, withArgs(remoteBuilder))
+		}
+		if hasCtnBuilder0 {
+			_, _ = rmCmd(sb, withArgs(ctnBuilder0))
+		}
+		if hasCtnBuilder1 {
+			_, _ = rmCmd(sb, withArgs(ctnBuilder1))
+		}
+	})
+
+	out, err := createCmd(sb, withArgs("--driver", "docker-container", "--name", ctnBuilder0, "--platform", "linux/amd64"))
+	require.NoError(t, err, out)
+	hasCtnBuilder0 = true
+	out, err = inspectCmd(sb, withArgs("--bootstrap", ctnBuilder0))
+	require.NoError(t, err, out)
+	endpoint0 := fmt.Sprintf("docker-container://%s0", driver.BuilderName(ctnBuilder0))
+
+	out, err = createCmd(sb, withArgs("--driver", "docker-container", "--name", ctnBuilder1, "--platform", "linux/arm64"))
+	require.NoError(t, err, out)
+	hasCtnBuilder1 = true
+	out, err = inspectCmd(sb, withArgs("--bootstrap", ctnBuilder1))
+	require.NoError(t, err, out)
+	endpoint1 := fmt.Sprintf("docker-container://%s0", driver.BuilderName(ctnBuilder1))
+
+	out, err = createCmd(sb, withArgs("--driver", "remote", "--name", remoteBuilder, endpoint0))
+	require.NoError(t, err, out)
+	hasRemoteBuilder = true
+	out, err = createCmd(sb, withArgs("--append", "--name", remoteBuilder, endpoint1))
+	require.NoError(t, err, out)
+	out, err = inspectCmd(sb, withArgs("--bootstrap", remoteBuilder))
+	require.NoError(t, err, out)
+
+	return remoteBuilder
+}
+
+func requireHistoryRef(t *testing.T, sb integration.Sandbox, builderName, ref string) {
+	cmd := buildxCmd(sb, withArgs("history", "ls", "--builder="+builderName, "--filter=ref="+ref, "--format={{.Ref}}"))
+	out, err := cmd.Output()
+	require.NoError(t, err, string(out))
+
+	var matches int
+	for line := range strings.SplitSeq(strings.TrimSpace(string(out)), "\n") {
+		if strings.TrimSpace(line) == ref {
+			matches++
+		}
+	}
+	require.GreaterOrEqual(t, matches, 1)
 }
