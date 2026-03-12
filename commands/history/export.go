@@ -7,6 +7,8 @@ import (
 	"slices"
 
 	"github.com/containerd/console"
+	"github.com/containerd/containerd/v2/core/content/proxy"
+	cerrdefs "github.com/containerd/errdefs"
 	"github.com/containerd/platforms"
 	"github.com/docker/buildx/builder"
 	"github.com/docker/buildx/localstate"
@@ -15,6 +17,7 @@ import (
 	"github.com/docker/buildx/util/desktop/bundle"
 	"github.com/docker/cli/cli/command"
 	"github.com/moby/buildkit/client"
+	"github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -37,6 +40,11 @@ func runExport(ctx context.Context, dockerCli command.Cli, opts exportOptions) e
 		opts.refs = []string{""}
 	}
 
+	type finalizeTarget struct {
+		ref  string
+		node *builder.Node
+	}
+
 	var res []historyRecord
 	for _, ref := range opts.refs {
 		recs, err := queryRecords(ctx, ref, nodes, &queryOptions{
@@ -53,37 +61,69 @@ func runExport(ctx context.Context, dockerCli command.Cli, opts exportOptions) e
 			return errors.Errorf("no record found for ref %q", ref)
 		}
 
+		selected := selectExportRecordCandidates(ref, recs, opts.all)
 		if opts.finalize {
+			seen := make(map[finalizeTarget]struct{}, len(selected))
 			var finalized bool
-			for _, rec := range recs {
-				if rec.Trace == nil {
-					finalized = true
-					if err := finalizeRecord(ctx, rec.Ref, nodes); err != nil {
+			for _, rec := range selected {
+				if rec.node == nil {
+					continue
+				}
+				key := finalizeTarget{ref: rec.Ref, node: rec.node}
+				if _, ok := seen[key]; ok {
+					continue
+				}
+				if rec.Trace != nil {
+					c, err := rec.node.Driver.Client(ctx)
+					if err != nil {
+						return err
+					}
+					store := proxy.NewContentStore(c.ContentClient())
+					if _, err := store.Info(ctx, digest.Digest(rec.Trace.Digest)); err == nil {
+						continue
+					}
+					if !cerrdefs.IsNotFound(err) {
 						return err
 					}
 				}
+				seen[key] = struct{}{}
+				finalized = true
+				if err := finalizeRecord(ctx, rec.Ref, *rec.node); err != nil {
+					return err
+				}
 			}
 			if finalized {
-				recs, err = queryRecords(ctx, ref, nodes, &queryOptions{
+				queryRef := ref
+				if !opts.all {
+					queryRef = selected[0].Ref
+				}
+				recs, err = queryRecords(ctx, queryRef, nodes, &queryOptions{
 					CompletedOnly: true,
 				})
 				if err != nil {
 					return err
 				}
+				selected = selectExportRecordCandidates(queryRef, recs, opts.all)
 			}
 		}
-
-		if ref == "" {
-			slices.SortFunc(recs, func(a, b historyRecord) int {
-				return b.CreatedAt.AsTime().Compare(a.CreatedAt.AsTime())
-			})
+		if len(selected) > 1 {
+			// A logical build ref can appear once per node. Keep one candidate
+			// per ref and let bundle export resolve content across node stores.
+			filtered := selected[:0]
+			seen := make(map[string]struct{}, len(selected))
+			for _, rec := range selected {
+				if _, ok := seen[rec.Ref]; ok {
+					continue
+				}
+				seen[rec.Ref] = struct{}{}
+				filtered = append(filtered, rec)
+			}
+			selected = filtered
 		}
 
+		res = append(res, selected...)
 		if opts.all {
-			res = append(res, recs...)
 			break
-		} else {
-			res = append(res, recs[0])
 		}
 	}
 
@@ -103,6 +143,7 @@ func runExport(ctx context.Context, dockerCli command.Cli, opts exportOptions) e
 			return err
 		}
 		clients = append(clients, c)
+		visited[rec.node] = struct{}{}
 	}
 
 	toExport := make([]*bundle.Record, 0, len(res))
@@ -144,6 +185,26 @@ func runExport(ctx context.Context, dockerCli command.Cli, opts exportOptions) e
 	}
 
 	return bundle.Export(ctx, clients, w, toExport)
+}
+
+func selectExportRecordCandidates(ref string, recs []historyRecord, all bool) []historyRecord {
+	if ref == "" {
+		slices.SortFunc(recs, func(a, b historyRecord) int {
+			return b.CreatedAt.AsTime().Compare(a.CreatedAt.AsTime())
+		})
+	}
+	if all || ref != "" {
+		return recs
+	}
+	latestRef := recs[0].Ref
+	out := make([]historyRecord, 0, len(recs))
+	for _, rec := range recs {
+		if rec.Ref != latestRef {
+			break
+		}
+		out = append(out, rec)
+	}
+	return out
 }
 
 func exportCmd(dockerCli command.Cli, rootOpts RootOptions) *cobra.Command {
