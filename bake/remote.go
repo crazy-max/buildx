@@ -32,8 +32,8 @@ func ReadRemoteFiles(ctx context.Context, nodes []builder.Node, url string, name
 	var sessions []session.Attachable
 	var filename string
 
-	keepGitDir := false
-	st, ok, err := dockerui.DetectGitContext(url, &keepGitDir)
+	keepGitDir, debugGitCommands := false, false
+	st, ok, err := dockerui.DetectGitContext(url, &keepGitDir, &debugGitCommands)
 	if ok {
 		if err != nil {
 			return nil, nil, err

@@ -7,8 +7,10 @@ import (
 	"os"
 	"os/exec"
 	"slices"
+	"strconv"
 	"strings"
 
+	"github.com/moby/buildkit/util/urlutil"
 	"github.com/pkg/errors"
 )
 
@@ -21,6 +23,7 @@ type GitCLI struct {
 	args    []string
 	dir     string
 	streams StreamFunc
+	debug   bool
 
 	workTree string
 	gitDir   string
@@ -108,6 +111,12 @@ func WithStreams(streams StreamFunc) Option {
 	}
 }
 
+func WithDebugCommands(debug bool) Option {
+	return func(b *GitCLI) {
+		b.debug = debug
+	}
+}
+
 // New initializes a new git client
 func NewGitCLI(opts ...Option) *GitCLI {
 	c := &GitCLI{}
@@ -169,21 +178,27 @@ func (cli *GitCLI) Run(ctx context.Context, args ...string) (_ []byte, err error
 		cmd.Stdin = nil
 		cmd.Stdout = buf
 		cmd.Stderr = errbuf
+		var stdoutStream io.WriteCloser
+		var stderrStream io.WriteCloser
+		flush := func() {}
 		if cli.streams != nil {
-			stdout, stderr, flush := cli.streams(ctx)
-			if stdout != nil {
-				cmd.Stdout = io.MultiWriter(stdout, cmd.Stdout)
+			stdoutStream, stderrStream, flush = cli.streams(ctx)
+			if stdoutStream != nil {
+				cmd.Stdout = io.MultiWriter(stdoutStream, cmd.Stdout)
 			}
-			if stderr != nil {
-				cmd.Stderr = io.MultiWriter(stderr, cmd.Stderr)
+			if stderrStream != nil {
+				cmd.Stderr = io.MultiWriter(stderrStream, cmd.Stderr)
 			}
-			defer stdout.Close()
-			defer stderr.Close()
+			defer stdoutStream.Close()
+			defer stderrStream.Close()
 			defer func() {
 				if err != nil {
 					flush()
 				}
 			}()
+		}
+		if cli.debug && stderrStream != nil {
+			_, _ = io.WriteString(stderrStream, "+ "+formatDebugCommand(cmd.Args)+"\n")
 		}
 
 		cmd.Env = []string{
@@ -241,6 +256,51 @@ func (cli *GitCLI) Run(ctx context.Context, args ...string) (_ []byte, err error
 		}
 		return buf.Bytes(), nil
 	}
+}
+
+func formatDebugCommand(args []string) string {
+	redacted := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "-c" && i+1 < len(args) {
+			redacted = append(redacted, arg, redactGitConfig(args[i+1]))
+			i++
+			continue
+		}
+		redacted = append(redacted, redactGitArg(arg))
+	}
+
+	quoted := make([]string, 0, len(redacted))
+	for _, arg := range redacted {
+		quoted = append(quoted, quoteForDebug(arg))
+	}
+	return strings.Join(quoted, " ")
+}
+
+func redactGitConfig(arg string) string {
+	if key, _, ok := strings.Cut(arg, "="); ok && strings.HasSuffix(strings.ToLower(key), ".extraheader") {
+		return key + "=<redacted>"
+	}
+	return redactGitArg(arg)
+}
+
+func redactGitArg(arg string) string {
+	if strings.Contains(arg, "://") {
+		if redacted := urlutil.RedactCredentials(arg); redacted != arg {
+			return redacted
+		}
+	}
+	return arg
+}
+
+func quoteForDebug(arg string) string {
+	if arg == "" {
+		return `""`
+	}
+	if strings.ContainsAny(arg, " \t\n\r\"'`$&|;<>()[]{}*?!#\\") {
+		return strconv.Quote(arg)
+	}
+	return arg
 }
 
 func getGitSSHCommand(knownHosts string) string {
