@@ -987,8 +987,8 @@ func resolveRemotePolicyContextState(contextPath string, target *client.SolveOpt
 		}
 	}
 
-	keepGitDir := false
-	if st, ok, _ := dockerui.DetectGitContext(contextPath, &keepGitDir); ok {
+	keepGitDir, debugGitCommands := false, false
+	if st, ok, _ := dockerui.DetectGitContext(contextPath, &keepGitDir, &debugGitCommands); ok {
 		return st
 	}
 
@@ -1094,7 +1094,16 @@ func processGitURL(url string, name string, target *client.SolveOpt, caps map[st
 		}
 	}
 
-	st, ok, err := dockerui.DetectGitContext(url, keepGitDir)
+	var debugGitCommands *bool
+	if name == "context" {
+		if v, ok := target.FrontendAttrs["build-arg:BUILDKIT_DEBUG_GIT_COMMANDS"]; ok {
+			if vv, err := strconv.ParseBool(v); err == nil {
+				debugGitCommands = &vv
+			}
+		}
+	}
+
+	st, ok, err := dockerui.DetectGitContext(url, keepGitDir, debugGitCommands)
 	if err != nil {
 		return err
 	}

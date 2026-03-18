@@ -447,7 +447,7 @@ func parseSource(input string) (*pb.SourceOp, error) {
 		return &pb.SourceOp{Identifier: "docker-image://" + ref.String()}, nil
 	}
 	if strings.HasPrefix(input, "git://") {
-		_, ok, err := dockerui.DetectGitContext(input, nil)
+		_, ok, err := dockerui.DetectGitContext(input, nil, nil)
 		if !ok {
 			return nil, errors.Errorf("invalid git context %s", input)
 		}
@@ -457,7 +457,7 @@ func parseSource(input string) (*pb.SourceOp, error) {
 		return &pb.SourceOp{Identifier: input}, nil
 	}
 	if strings.HasPrefix(input, "http://") || strings.HasPrefix(input, "https://") {
-		_, ok, err := dockerui.DetectGitContext(input, nil)
+		_, ok, err := dockerui.DetectGitContext(input, nil, nil)
 		if ok {
 			return &pb.SourceOp{
 				Identifier: "git://" + input,
