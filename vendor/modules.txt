@@ -649,7 +649,7 @@ github.com/mattn/go-shellwords
 # github.com/mitchellh/go-wordwrap v1.0.1
 ## explicit; go 1.14
 github.com/mitchellh/go-wordwrap
-# github.com/moby/buildkit v0.34.0
+# github.com/moby/buildkit v0.34.0 => github.com/crazy-max/buildkit v0.7.1-0.20261015135730-122e389b7712
 ## explicit; go 1.26.8
 github.com/moby/buildkit/api/services/control
 github.com/moby/buildkit/api/types
@@ -1654,3 +1654,4 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
+# github.com/moby/buildkit => github.com/crazy-max/buildkit v0.7.1-0.20261015135730-122e389b7712
