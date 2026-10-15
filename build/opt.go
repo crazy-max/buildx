@@ -1288,7 +1288,11 @@ func processGitURL(url string, name string, target *client.SolveOpt, caps map[st
 	}
 
 	gitAdvice, _ := strconv.ParseBool(target.FrontendAttrs["build-arg:BUILDKIT_GIT_ADVICE"])
-	st, ok, err := dockerui.DetectGitContext(url, keepGitDir, llb.GitAdvice(gitAdvice))
+	gitOpts := []llb.GitOption{llb.GitAdvice(gitAdvice)}
+	if v, err := strconv.ParseBool(target.FrontendAttrs["build-arg:BUILDKIT_GIT_DEBUG_COMMANDS"]); err == nil && v {
+		gitOpts = append(gitOpts, llb.GitDebugCommands())
+	}
+	st, ok, err := dockerui.DetectGitContext(url, keepGitDir, gitOpts...)
 	if err != nil {
 		return err
 	}

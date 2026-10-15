@@ -261,6 +261,78 @@ func TestGitAdviceContexts(t *testing.T) {
 	}
 }
 
+func TestGitDebugCommandsContexts(t *testing.T) {
+	previous := sendGitQueryAsInput
+	sendGitQueryAsInput = func() bool { return true }
+	t.Cleanup(func() { sendGitQueryAsInput = previous })
+
+	const url = "https://example.com/repo.git?branch=main"
+	for _, name := range []string{"context", "context:src"} {
+		t.Run(name, func(t *testing.T) {
+			for _, tc := range []struct {
+				name string
+				arg  string
+				want bool
+			}{
+				{
+					name: "unset",
+				},
+				{
+					name: "enabled",
+					arg:  "1",
+					want: true,
+				},
+				{
+					name: "true",
+					arg:  "true",
+					want: true,
+				},
+				{
+					name: "disabled",
+					arg:  "0",
+				},
+				{
+					name: "false",
+					arg:  "false",
+				},
+				{
+					name: "invalid",
+					arg:  "invalid",
+				},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					target := &client.SolveOpt{FrontendAttrs: map[string]string{
+						"build-arg:BUILDKIT_GIT_ADVICE": "true",
+					}}
+					if tc.arg != "" {
+						target.FrontendAttrs["build-arg:BUILDKIT_GIT_DEBUG_COMMANDS"] = tc.arg
+					}
+					require.NoError(t, processGitURL(url, name, target, map[string]struct{}{}))
+					inputName := "context"
+					if name != "context" {
+						inputName = "git_state_" + name
+					}
+					st, ok := target.FrontendInputs[inputName]
+					require.True(t, ok)
+					def, err := st.Marshal(t.Context())
+					require.NoError(t, err)
+					require.NotEmpty(t, def.Def)
+					var op pb.Op
+					require.NoError(t, op.UnmarshalVT(def.Def[0]))
+					source := op.GetSource()
+					require.NotNil(t, source)
+					require.Equal(t, "true", source.Attrs[pb.AttrGitAdvice])
+					if tc.want {
+						require.Equal(t, "true", source.Attrs[pb.AttrGitDebugCommands])
+					} else {
+						require.NotContains(t, source.Attrs, pb.AttrGitDebugCommands)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestCacheOptions_DerivedVars(t *testing.T) {
 	t.Setenv("ACTIONS_RUNTIME_TOKEN", "sensitive_token")
 	t.Setenv("ACTIONS_CACHE_URL", "https://cache.github.com")
